@@ -21,9 +21,13 @@ export interface Student {
   id: string;
   name: string;
   section: string;
-  grade: string;
+  grade: string;  // Will display as "marks" but keeping the property name for compatibility
   enrollmentNo: string;
   attendancePercentage: number;
+  testType?: {  // Add test type information
+    name: string;
+    maxMarks: number;
+  };
 }
 
 export interface Teacher {

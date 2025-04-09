@@ -1,5 +1,6 @@
 
 import React, { useState } from "react";
+import { Link } from "react-router-dom";
 import DashboardLayout from "@/components/layouts/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,6 +8,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, Download, UserPlus } from "lucide-react";
 import { mockStudents } from "@/lib/mockData";
+import * as XLSX from 'xlsx';
+import { toast } from "sonner";
 
 const Students = () => {
   const [search, setSearch] = useState("");
@@ -26,6 +29,54 @@ const Students = () => {
     
     return matchesSearch && matchesGrade && matchesSection;
   });
+
+  // Export students data to Excel
+  const exportToExcel = () => {
+    const exportData = filteredStudents.map(student => ({
+      Name: student.name,
+      "Enrollment No": student.enrollmentNo,
+      Marks: student.grade,
+      Section: student.section,
+      Attendance: `${student.attendancePercentage}%`
+    }));
+    
+    // Create workbook and worksheet
+    const workbook = XLSX.utils.book_new();
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    
+    // Add worksheet to workbook
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Students");
+    
+    // Export Excel file
+    XLSX.writeFile(workbook, "students_data.xlsx");
+    
+    toast.success("Student data exported to Excel");
+  };
+  
+  // Handle Excel file import
+  const handleFileImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const data = evt.target?.result;
+        const workbook = XLSX.read(data, { type: 'binary' });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+        
+        // In a real app, we would process this data and add to database
+        console.log("Imported data:", jsonData);
+        toast.success(`Successfully imported ${jsonData.length} students`);
+      } catch (error) {
+        toast.error("Error importing file. Please check the format.");
+        console.error("Import error:", error);
+      }
+    };
+    reader.readAsBinaryString(file);
+  };
   
   return (
     <DashboardLayout>
@@ -37,10 +88,12 @@ const Students = () => {
               View and manage student information
             </p>
           </div>
-          <Button className="flex items-center gap-2">
-            <UserPlus className="h-4 w-4" />
-            Add Student
-          </Button>
+          <Link to="/add-student">
+            <Button className="flex items-center gap-2">
+              <UserPlus className="h-4 w-4" />
+              Add Student
+            </Button>
+          </Link>
         </div>
         
         <Card>
@@ -63,13 +116,13 @@ const Students = () => {
               <div className="w-full md:w-48">
                 <Select value={gradeFilter} onValueChange={setGradeFilter}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Grade" />
+                    <SelectValue placeholder="Marks" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Grades</SelectItem>
+                    <SelectItem value="all">All Marks</SelectItem>
                     {grades.map(grade => (
                       <SelectItem key={grade} value={grade}>
-                        Grade {grade}
+                        Marks: {grade}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -93,8 +146,24 @@ const Students = () => {
                 </Select>
               </div>
               
+              {/* Import Button */}
+              <div className="w-full md:w-48">
+                <label htmlFor="import-excel" className="cursor-pointer">
+                  <div className="flex items-center justify-center w-full px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50">
+                    <span className="text-sm font-medium">Import Excel</span>
+                  </div>
+                  <input
+                    id="import-excel"
+                    type="file"
+                    accept=".xlsx,.xls"
+                    className="hidden"
+                    onChange={handleFileImport}
+                  />
+                </label>
+              </div>
+              
               {/* Export Button */}
-              <Button variant="outline">
+              <Button variant="outline" onClick={exportToExcel}>
                 <Download className="mr-2 h-4 w-4" />
                 Export
               </Button>
@@ -107,7 +176,7 @@ const Students = () => {
                   <tr className="border-b">
                     <th className="text-left py-3 px-4 font-medium">Name</th>
                     <th className="text-left py-3 px-4 font-medium">Enrollment No</th>
-                    <th className="text-left py-3 px-4 font-medium">Grade</th>
+                    <th className="text-left py-3 px-4 font-medium">Marks</th>
                     <th className="text-left py-3 px-4 font-medium">Section</th>
                     <th className="text-left py-3 px-4 font-medium">Attendance</th>
                     <th className="text-right py-3 px-4 font-medium">Actions</th>

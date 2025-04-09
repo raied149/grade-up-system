@@ -1,5 +1,6 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import DashboardLayout from "@/components/layouts/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,10 +8,23 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, Download, UserPlus, Mail } from "lucide-react";
 import { mockTeachers } from "@/lib/mockData";
+import { toast } from "sonner";
+import * as XLSX from 'xlsx';
 
 const Teachers = () => {
   const [search, setSearch] = useState("");
   const [subjectFilter, setSubjectFilter] = useState("all");
+  const navigate = useNavigate();
+  const [userRole, setUserRole] = useState<string | null>(null);
+  
+  // Get user role from localStorage
+  useEffect(() => {
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      const user = JSON.parse(storedUser);
+      setUserRole(user.role);
+    }
+  }, []);
   
   // Get unique subjects for filters
   const subjects = Array.from(new Set(mockTeachers.map(teacher => teacher.subject)));
@@ -23,6 +37,54 @@ const Teachers = () => {
     
     return matchesSearch && matchesSubject;
   });
+
+  // Export teachers data to Excel
+  const exportToExcel = () => {
+    const exportData = filteredTeachers.map(teacher => ({
+      Name: teacher.name,
+      Email: teacher.email,
+      Subject: teacher.subject,
+      Qualifications: teacher.qualifications.join(", "),
+      Classes: teacher.classes.join(", ")
+    }));
+    
+    // Create workbook and worksheet
+    const workbook = XLSX.utils.book_new();
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    
+    // Add worksheet to workbook
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Teachers");
+    
+    // Export Excel file
+    XLSX.writeFile(workbook, "teachers_data.xlsx");
+    
+    toast.success("Teacher data exported to Excel");
+  };
+
+  // Handle Excel file import
+  const handleFileImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const data = evt.target?.result;
+        const workbook = XLSX.read(data, { type: 'binary' });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+        
+        // In a real app, we would process this data and add to database
+        console.log("Imported data:", jsonData);
+        toast.success(`Successfully imported ${jsonData.length} teachers`);
+      } catch (error) {
+        toast.error("Error importing file. Please check the format.");
+        console.error("Import error:", error);
+      }
+    };
+    reader.readAsBinaryString(file);
+  };
   
   return (
     <DashboardLayout>
@@ -34,10 +96,14 @@ const Teachers = () => {
               View and manage teacher information
             </p>
           </div>
-          <Button className="flex items-center gap-2">
-            <UserPlus className="h-4 w-4" />
-            Add Teacher
-          </Button>
+          {userRole === 'admin' && (
+            <Link to="/add-teacher">
+              <Button className="flex items-center gap-2">
+                <UserPlus className="h-4 w-4" />
+                Add Teacher
+              </Button>
+            </Link>
+          )}
         </div>
         
         <Card>
@@ -73,8 +139,25 @@ const Teachers = () => {
                 </Select>
               </div>
               
+              {userRole === 'admin' && (
+                <div className="w-full md:w-48">
+                  <label htmlFor="import-excel" className="cursor-pointer">
+                    <div className="flex items-center justify-center w-full px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50">
+                      <span className="text-sm font-medium">Import Excel</span>
+                    </div>
+                    <input
+                      id="import-excel"
+                      type="file"
+                      accept=".xlsx,.xls"
+                      className="hidden"
+                      onChange={handleFileImport}
+                    />
+                  </label>
+                </div>
+              )}
+              
               {/* Export Button */}
-              <Button variant="outline">
+              <Button variant="outline" onClick={exportToExcel}>
                 <Download className="mr-2 h-4 w-4" />
                 Export
               </Button>
@@ -131,7 +214,9 @@ const Teachers = () => {
                         </td>
                         <td className="py-3 px-4 text-right">
                           <Button variant="ghost" size="sm">View</Button>
-                          <Button variant="ghost" size="sm">Edit</Button>
+                          {userRole === 'admin' && (
+                            <Button variant="ghost" size="sm">Edit</Button>
+                          )}
                         </td>
                       </tr>
                     ))

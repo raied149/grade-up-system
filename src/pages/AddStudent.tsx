@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import DashboardLayout from "@/components/layouts/DashboardLayout";
 import { Button } from "@/components/ui/button";
@@ -8,11 +8,30 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Student } from "@/lib/types";
+import { Student, User } from "@/lib/types";
 import * as XLSX from 'xlsx';
 
 const AddStudent = () => {
   const navigate = useNavigate();
+  const [userRole, setUserRole] = useState<string | null>(null);
+  
+  useEffect(() => {
+    // Check user role for access control
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      const user = JSON.parse(storedUser);
+      setUserRole(user.role);
+      
+      // If not admin or teacher, redirect to dashboard
+      if (user.role !== 'admin' && user.role !== 'teacher') {
+        toast.error("You don't have permission to access this page");
+        navigate("/dashboard");
+      }
+    } else {
+      // If no user found, redirect to login
+      navigate("/");
+    }
+  }, [navigate]);
   
   const [formData, setFormData] = useState({
     name: "",
@@ -60,8 +79,12 @@ const AddStudent = () => {
       name: formData.name,
       enrollmentNo: formData.enrollmentNo,
       section: formData.section,
-      grade: "", // We'll keep this for compatibility but use marks instead
-      attendancePercentage: 100 // Default value for new student
+      grade: formData.marks, // We use marks as grade
+      attendancePercentage: 100, // Default value for new student
+      testType: {
+        name: formData.testType.name,
+        maxMarks: formData.testType.maxMarks
+      }
     };
     
     // In a real app, we would send this to an API
@@ -90,6 +113,44 @@ const AddStudent = () => {
     
     toast.success("Student data exported to Excel");
   };
+
+  // Handle Excel file import
+  const handleFileImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const data = evt.target?.result;
+        const workbook = XLSX.read(data, { type: 'binary' });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+        
+        if (jsonData.length > 0) {
+          // Display first student data as an example
+          const firstStudent = jsonData[0] as any;
+          setFormData({
+            name: firstStudent.Name || "",
+            enrollmentNo: firstStudent["Enrollment No"] || "",
+            section: firstStudent.Section || "A",
+            marks: firstStudent.Marks?.toString() || "",
+            testType: {
+              name: firstStudent["Test Name"] || "",
+              maxMarks: parseInt(firstStudent["Max Marks"]) || 100
+            }
+          });
+          
+          toast.success(`Successfully imported ${jsonData.length} students. First student loaded in form.`);
+        }
+      } catch (error) {
+        toast.error("Error importing file. Please check the format.");
+        console.error("Import error:", error);
+      }
+    };
+    reader.readAsBinaryString(file);
+  };
   
   return (
     <DashboardLayout>
@@ -107,6 +168,21 @@ const AddStudent = () => {
           </CardHeader>
           <form onSubmit={handleSubmit}>
             <CardContent className="space-y-4">
+              <div className="flex justify-end mb-4">
+                <label htmlFor="import-excel" className="cursor-pointer">
+                  <div className="flex items-center justify-center px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50">
+                    <span className="text-sm font-medium">Import from Excel</span>
+                  </div>
+                  <input
+                    id="import-excel"
+                    type="file"
+                    accept=".xlsx,.xls"
+                    className="hidden"
+                    onChange={handleFileImport}
+                  />
+                </label>
+              </div>
+              
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="name">Full Name</Label>
