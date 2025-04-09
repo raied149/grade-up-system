@@ -28,7 +28,9 @@ import {
   Menu, 
   Settings, 
   User as UserIcon, 
-  Users 
+  Users,
+  Wallet,
+  BookOpen
 } from "lucide-react";
 
 interface DashboardLayoutProps {
@@ -104,6 +106,18 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
         allowed: ["admin", "teacher", "student"],
       },
       {
+        name: "Fees",
+        path: "/fees",
+        icon: <Wallet className="h-5 w-5" />,
+        allowed: ["admin", "teacher"],
+      },
+      {
+        name: "Test/Exam",
+        path: "/exam",
+        icon: <BookOpen className="h-5 w-5" />,
+        allowed: ["admin", "teacher"],
+      },
+      {
         name: "Students",
         path: "/students",
         icon: <Users className="h-5 w-5" />,
@@ -170,11 +184,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="w-full justify-start p-2">
                 <div className="flex items-center">
-                  <Avatar className="h-8 w-8 mr-2">
-                    <AvatarImage src={user.avatar} alt={user.name} />
-                    <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
-                  </Avatar>
-                  <div className="text-left">
+                  <div className="text-left ml-2">
                     <p className="text-sm font-medium">{user.name}</p>
                     <p className="text-xs text-muted-foreground capitalize">{user.role}</p>
                   </div>
@@ -261,10 +271,6 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
             
             <div className="p-4 border-t border-gray-200">
               <div className="flex items-center">
-                <Avatar className="h-8 w-8 mr-2">
-                  <AvatarImage src={user.avatar} alt={user.name} />
-                  <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
-                </Avatar>
                 <div>
                   <p className="text-sm font-medium">{user.name}</p>
                   <p className="text-xs text-muted-foreground capitalize">{user.role}</p>

@@ -24,6 +24,9 @@ export interface Student {
   grade: string;  // Will display as "marks" but keeping the property name for compatibility
   enrollmentNo: string;
   attendancePercentage: number;
+  guardianName?: string; // New field for guardian name
+  guardianNumber?: string; // New field for guardian phone
+  address?: string; // New field for student address
   testType?: {  // Add test type information
     name: string;
     maxMarks: number;
@@ -77,6 +80,8 @@ export interface Exam {
   subject: string;
   date: string;
   totalMarks: number;
+  class?: string; // Added class field
+  type: "test" | "exam"; // Added type field
 }
 
 export interface Mark {
@@ -93,9 +98,12 @@ export interface CalendarEvent {
   start: string;
   end: string;
   allDay: boolean;
-  type: "class" | "exam" | "meeting" | "holiday" | "task";
+  type: "class" | "exam" | "meeting" | "holiday" | "task" | "test";
   description?: string;
   assignedTeachers?: string[]; // New field to support multiple teachers
+  maxMarks?: number; // For exam/test events
+  subject?: string; // For test events
+  class?: string; // For test/exam events
 }
 
 export interface AttendanceSummary {
@@ -111,4 +119,15 @@ export interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+}
+
+export interface Fee {
+  id: string;
+  studentId: string;
+  amount: number;
+  dueDate: string;
+  status: "paid" | "not_paid" | "partial";
+  paidAmount?: number;
+  paidDate?: string;
+  description?: string;
 }

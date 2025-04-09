@@ -17,6 +17,37 @@ import { toast } from "sonner";
 import { mockTeachers } from "@/lib/mockData";
 import * as XLSX from 'xlsx';
 
+// Mock classes
+const mockClasses = [
+  {
+    id: "class-1",
+    name: "Grade 8",
+    section: "A",
+  },
+  {
+    id: "class-2",
+    name: "Grade 9",
+    section: "B",
+  },
+  {
+    id: "class-3",
+    name: "Grade 10",
+    section: "A",
+  },
+];
+
+// Mock subjects
+const mockSubjects = [
+  "Mathematics",
+  "Physics",
+  "Chemistry",
+  "Biology",
+  "English",
+  "History",
+  "Geography",
+  "Computer Science",
+];
+
 // Mock calendar events
 const initialEvents: CalendarEvent[] = [
   { 
@@ -35,7 +66,9 @@ const initialEvents: CalendarEvent[] = [
     end: "2025-04-15T12:00:00", 
     allDay: false,
     type: "exam",
-    description: "Final math examination for Grade 8 students"
+    description: "Final math examination for Grade 8 students",
+    maxMarks: 100,
+    class: "Grade 8"
   },
   { 
     id: "event-3", 
@@ -54,6 +87,18 @@ const initialEvents: CalendarEvent[] = [
     allDay: false,
     type: "meeting",
     description: "Quarterly parent-teacher meetings"
+  },
+  { 
+    id: "event-5", 
+    title: "Physics Test", 
+    start: "2025-04-18T09:00:00", 
+    end: "2025-04-18T10:00:00", 
+    allDay: false,
+    type: "test",
+    description: "Unit test on mechanics",
+    subject: "Physics",
+    maxMarks: 25,
+    class: "Grade 9"
   }
 ];
 
@@ -63,6 +108,7 @@ const Calendar = () => {
   const [events, setEvents] = useState<CalendarEvent[]>(initialEvents);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedTeachers, setSelectedTeachers] = useState<string[]>([]);
+  const [assignTeachers, setAssignTeachers] = useState<boolean>(true);
   
   const [newEvent, setNewEvent] = useState<{
     title: string;
@@ -70,7 +116,10 @@ const Calendar = () => {
     start: string;
     end: string;
     allDay: boolean;
-    type: "class" | "exam" | "meeting" | "holiday" | "task";
+    type: "class" | "exam" | "meeting" | "holiday" | "task" | "test";
+    subject?: string;
+    class?: string;
+    maxMarks?: string;
   }>({
     title: "",
     description: "",
@@ -79,6 +128,39 @@ const Calendar = () => {
     allDay: false,
     type: "meeting"
   });
+  
+  // Reset form when dialog closes
+  useEffect(() => {
+    if (!isDialogOpen) {
+      setNewEvent({
+        title: "",
+        description: "",
+        start: format(date, "yyyy-MM-dd'T'HH:mm"),
+        end: format(date, "yyyy-MM-dd'T'HH:mm"),
+        allDay: false,
+        type: "meeting"
+      });
+      setSelectedTeachers([]);
+      setAssignTeachers(true);
+    }
+  }, [isDialogOpen, date]);
+  
+  // Update form based on event type
+  useEffect(() => {
+    if (newEvent.type === 'test' || newEvent.type === 'exam') {
+      if (newEvent.type === 'test') {
+        setNewEvent(prev => ({
+          ...prev,
+          subject: prev.subject || ''
+        }));
+      } else if (newEvent.type === 'exam') {
+        setNewEvent(prev => ({
+          ...prev,
+          subject: undefined
+        }));
+      }
+    }
+  }, [newEvent.type]);
   
   // Get events for the selected month
   const monthStart = startOfMonth(date);
@@ -106,7 +188,7 @@ const Calendar = () => {
   // Function to add a new event
   const handleAddEvent = () => {
     const eventId = `event-${Date.now()}`;
-    const newCalendarEvent: CalendarEvent = {
+    const eventData: CalendarEvent = {
       id: eventId,
       title: newEvent.title,
       start: newEvent.start,
@@ -114,40 +196,59 @@ const Calendar = () => {
       allDay: newEvent.allDay,
       type: newEvent.type,
       description: newEvent.description,
-      assignedTeachers: selectedTeachers.length > 0 ? selectedTeachers : undefined
     };
     
-    setEvents(prev => [...prev, newCalendarEvent]);
+    // Add test/exam specific fields
+    if (newEvent.type === 'test' || newEvent.type === 'exam') {
+      eventData.maxMarks = newEvent.maxMarks ? parseInt(newEvent.maxMarks) : undefined;
+      eventData.class = newEvent.class;
+      
+      if (newEvent.type === 'test') {
+        eventData.subject = newEvent.subject;
+      }
+    }
+    
+    // Add teacher assignments if selected
+    if (assignTeachers && selectedTeachers.length > 0) {
+      eventData.assignedTeachers = selectedTeachers;
+    }
+    
+    setEvents(prev => [...prev, eventData]);
     toast.success("Event added successfully");
     setIsDialogOpen(false);
-    
-    // Reset form
-    setNewEvent({
-      title: "",
-      description: "",
-      start: format(date, "yyyy-MM-dd'T'HH:mm"),
-      end: format(date, "yyyy-MM-dd'T'HH:mm"),
-      allDay: false,
-      type: "meeting"
-    });
-    setSelectedTeachers([]);
   };
 
   // Export events to Excel
   const exportEventsToExcel = () => {
     // Transform events for Excel
-    const exportData = events.map(event => ({
-      Title: event.title,
-      Type: event.type,
-      Start: format(parseISO(event.start), "PPP"),
-      End: format(parseISO(event.end), "PPP"),
-      AllDay: event.allDay ? "Yes" : "No",
-      Description: event.description,
-      Teachers: event.assignedTeachers?.map(id => {
-        const teacher = mockTeachers.find(t => t.id === id);
-        return teacher ? teacher.name : id;
-      }).join(', ') || "All"
-    }));
+    const exportData = events.map(event => {
+      const baseData = {
+        Title: event.title,
+        Type: event.type.charAt(0).toUpperCase() + event.type.slice(1),
+        Start: format(parseISO(event.start), "PPP"),
+        End: format(parseISO(event.end), "PPP"),
+        StartTime: event.allDay ? "All Day" : format(parseISO(event.start), "p"),
+        EndTime: event.allDay ? "All Day" : format(parseISO(event.end), "p"),
+        AllDay: event.allDay ? "Yes" : "No",
+        Description: event.description || "",
+        Teachers: event.assignedTeachers?.map(id => {
+          const teacher = mockTeachers.find(t => t.id === id);
+          return teacher ? teacher.name : id;
+        }).join(', ') || "All"
+      };
+      
+      // Add test/exam specific fields
+      if (event.type === 'test' || event.type === 'exam') {
+        return {
+          ...baseData,
+          Subject: event.subject || "Multiple",
+          Class: event.class || "",
+          MaxMarks: event.maxMarks || ""
+        };
+      }
+      
+      return baseData;
+    });
     
     // Create worksheet
     const worksheet = XLSX.utils.json_to_sheet(exportData);
@@ -205,7 +306,7 @@ const Calendar = () => {
                     <Label htmlFor="type">Event Type</Label>
                     <Select 
                       value={newEvent.type} 
-                      onValueChange={(value: "class" | "exam" | "meeting" | "holiday" | "task") => 
+                      onValueChange={(value: "class" | "exam" | "meeting" | "holiday" | "task" | "test") => 
                         setNewEvent({...newEvent, type: value})}
                     >
                       <SelectTrigger>
@@ -213,6 +314,7 @@ const Calendar = () => {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="class">Class</SelectItem>
+                        <SelectItem value="test">Test</SelectItem>
                         <SelectItem value="exam">Exam</SelectItem>
                         <SelectItem value="meeting">Meeting</SelectItem>
                         <SelectItem value="holiday">Holiday</SelectItem>
@@ -220,6 +322,62 @@ const Calendar = () => {
                       </SelectContent>
                     </Select>
                   </div>
+                  
+                  {/* Test/Exam specific fields */}
+                  {(newEvent.type === 'test' || newEvent.type === 'exam') && (
+                    <>
+                      <div className="space-y-2">
+                        <Label htmlFor="class">Class</Label>
+                        <Select 
+                          value={newEvent.class} 
+                          onValueChange={(value) => setNewEvent({...newEvent, class: value})}
+                        >
+                          <SelectTrigger id="class">
+                            <SelectValue placeholder="Select class" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {mockClasses.map((cls) => (
+                              <SelectItem key={cls.id} value={cls.name}>
+                                {cls.name} - {cls.section}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      {newEvent.type === 'test' && (
+                        <div className="space-y-2">
+                          <Label htmlFor="subject">Subject</Label>
+                          <Select 
+                            value={newEvent.subject} 
+                            onValueChange={(value) => setNewEvent({...newEvent, subject: value})}
+                          >
+                            <SelectTrigger id="subject">
+                              <SelectValue placeholder="Select subject" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {mockSubjects.map((subject) => (
+                                <SelectItem key={subject} value={subject}>
+                                  {subject}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="maxMarks">Maximum Marks</Label>
+                        <Input 
+                          id="maxMarks" 
+                          type="number" 
+                          value={newEvent.maxMarks || ''} 
+                          onChange={(e) => setNewEvent({...newEvent, maxMarks: e.target.value})} 
+                          placeholder="Enter maximum marks" 
+                        />
+                      </div>
+                    </>
+                  )}
                   
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
@@ -263,31 +421,36 @@ const Calendar = () => {
                     />
                   </div>
                   
+                  {/* Teacher assignment section */}
                   <div className="space-y-2">
-                    <Label className="mb-2 block">Assign Teachers</Label>
-                    <div className="max-h-48 overflow-y-auto border rounded-md p-2">
-                      <div className="flex items-center space-x-2 mb-2">
-                        <Checkbox 
-                          id="no-teacher" 
-                          checked={selectedTeachers.length === 0} 
-                          onCheckedChange={() => setSelectedTeachers([])} 
-                        />
-                        <Label htmlFor="no-teacher">All/No specific teacher</Label>
-                      </div>
-                      <div className="space-y-2">
-                        {mockTeachers.map((teacher) => (
-                          <div key={teacher.id} className="flex items-center space-x-2">
-                            <Checkbox 
-                              id={teacher.id} 
-                              checked={selectedTeachers.includes(teacher.id)} 
-                              onCheckedChange={() => handleTeacherCheckboxChange(teacher.id)} 
-                              disabled={selectedTeachers.length === 0 && selectedTeachers.length > 0}
-                            />
-                            <Label htmlFor={teacher.id}>{teacher.name} ({teacher.subject})</Label>
-                          </div>
-                        ))}
-                      </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id="assign-teachers"
+                        checked={assignTeachers}
+                        onCheckedChange={(checked) => setAssignTeachers(checked === true)}
+                      />
+                      <Label htmlFor="assign-teachers">Assign Teachers to this Event</Label>
                     </div>
+                    
+                    {assignTeachers && (
+                      <div className="max-h-48 overflow-y-auto border rounded-md p-2 mt-2">
+                        <div className="mb-2 text-sm text-muted-foreground">
+                          Select teachers for this event:
+                        </div>
+                        <div className="space-y-2">
+                          {mockTeachers.map((teacher) => (
+                            <div key={teacher.id} className="flex items-center space-x-2">
+                              <Checkbox 
+                                id={teacher.id} 
+                                checked={selectedTeachers.includes(teacher.id)} 
+                                onCheckedChange={() => handleTeacherCheckboxChange(teacher.id)} 
+                              />
+                              <Label htmlFor={teacher.id}>{teacher.name} ({teacher.subject})</Label>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
                 
@@ -321,7 +484,7 @@ const Calendar = () => {
                 mode="single"
                 selected={date}
                 onSelect={(newDate) => newDate && setDate(newDate)}
-                className="rounded-md border"
+                className="rounded-md border pointer-events-auto"
               />
             </CardContent>
           </Card>
@@ -337,9 +500,10 @@ const Calendar = () => {
                       className={`p-3 rounded-md border ${
                         event.type === 'meeting' ? 'bg-blue-50 border-blue-200' :
                         event.type === 'exam' ? 'bg-amber-50 border-amber-200' :
+                        event.type === 'test' ? 'bg-purple-50 border-purple-200' :
                         event.type === 'class' ? 'bg-green-50 border-green-200' :
                         event.type === 'holiday' ? 'bg-red-50 border-red-200' :
-                        event.type === 'task' ? 'bg-purple-50 border-purple-200' :
+                        event.type === 'task' ? 'bg-indigo-50 border-indigo-200' :
                         'bg-gray-50 border-gray-200'
                       }`}
                     >
@@ -350,9 +514,28 @@ const Calendar = () => {
                           `${format(parseISO(event.start), 'h:mm a')} - ${format(parseISO(event.end), 'h:mm a')}`
                         }
                       </div>
+                      
+                      {/* Show test/exam specific information */}
+                      {(event.type === 'test' || event.type === 'exam') && (
+                        <div className="mt-1 text-sm">
+                          <div>
+                            {event.type === 'test' && event.subject && (
+                              <span className="font-medium">Subject: {event.subject}</span>
+                            )}
+                            {event.class && (
+                              <span className="ml-2 font-medium">Class: {event.class}</span>
+                            )}
+                          </div>
+                          {event.maxMarks !== undefined && (
+                            <div>Maximum Marks: {event.maxMarks}</div>
+                          )}
+                        </div>
+                      )}
+                      
                       {event.description && (
                         <div className="text-sm mt-1">{event.description}</div>
                       )}
+                      
                       {event.assignedTeachers && event.assignedTeachers.length > 0 && (
                         <div className="text-sm mt-2">
                           <span className="font-medium">Assigned to: </span>
