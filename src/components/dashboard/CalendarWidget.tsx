@@ -2,8 +2,8 @@
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
-import { format, addDays, subDays, isSameDay, isSameMonth, startOfMonth, endOfMonth, eachDayOfInterval, addMonths, subMonths, parseISO } from "date-fns";
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from "lucide-react";
+import { format, isSameDay, isSameMonth, startOfMonth, endOfMonth, eachDayOfInterval, addMonths, subMonths, parseISO } from "date-fns";
 import { CalendarEvent } from "@/lib/types";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 
@@ -72,6 +72,8 @@ const CalendarWidget: React.FC<CalendarWidgetProps> = ({ events }) => {
         return "bg-amber-100 text-amber-800 hover:bg-amber-200";
       case "meeting":
         return "bg-blue-100 text-blue-800 hover:bg-blue-200";
+      case "occasion":
+        return "bg-pink-100 text-pink-800 hover:bg-pink-200";
       case "holiday":
         return "bg-red-100 text-red-800 hover:bg-red-200";
       case "task":
@@ -219,12 +221,13 @@ const CalendarWidget: React.FC<CalendarWidgetProps> = ({ events }) => {
                   <div 
                     key={event.id} 
                     className={`p-3 rounded-md border ${
-                      event.type === 'meeting' ? 'bg-blue-50 border-blue-200' :
+                      event.type === 'meeting' || event.type === 'occasion' ? 'bg-blue-50 border-blue-200' :
                       event.type === 'exam' ? 'bg-amber-50 border-amber-200' :
                       event.type === 'test' ? 'bg-purple-50 border-purple-200' :
                       event.type === 'class' ? 'bg-green-50 border-green-200' :
                       event.type === 'holiday' ? 'bg-red-50 border-red-200' :
                       event.type === 'task' ? 'bg-indigo-50 border-indigo-200' :
+                      event.type === 'occasion' ? 'bg-pink-50 border-pink-200' :
                       'bg-gray-50 border-gray-200'
                     }`}
                   >
@@ -239,14 +242,9 @@ const CalendarWidget: React.FC<CalendarWidgetProps> = ({ events }) => {
                     {/* Show test/exam specific information */}
                     {(event.type === 'test' || event.type === 'exam') && (
                       <div className="mt-1 text-sm">
-                        <div>
-                          {event.type === 'test' && event.subject && (
-                            <span className="font-medium">Subject: {event.subject}</span>
-                          )}
-                          {event.class && (
-                            <span className="ml-2 font-medium">Class: {event.class}</span>
-                          )}
-                        </div>
+                        {event.type === 'test' && event.subject && (
+                          <div className="font-medium">Subject: {event.subject}</div>
+                        )}
                         {event.maxMarks !== undefined && (
                           <div>Maximum Marks: {event.maxMarks}</div>
                         )}

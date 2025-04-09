@@ -1,9 +1,16 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import DashboardLayout from "@/components/layouts/DashboardLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Search, Download, Plus, FileEdit } from "lucide-react";
+import { mockStudents } from "@/lib/mockData";
+import { toast } from "sonner";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import * as XLSX from 'xlsx';
 import {
   Table,
   TableBody,
@@ -12,648 +19,440 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
-import { Label } from "@/components/ui/label";
-import { toast } from "sonner";
-import { CalendarEvent, User } from "@/lib/types";
-import { Download, Edit, Plus, Trash, Upload } from "lucide-react";
-import * as XLSX from 'xlsx';
-import { mockTeachers } from "@/lib/mockData";
 
-// Create mock classes
-const mockClasses = [
-  {
-    id: "class-1",
-    name: "Grade 8",
-    section: "A",
-  },
-  {
-    id: "class-2",
-    name: "Grade 9",
-    section: "B",
-  },
-  {
-    id: "class-3",
-    name: "Grade 10",
-    section: "A",
-  },
+// Mock exams data
+const mockExams = [
+  { id: "1", title: "Mid Term Exam", subject: "", date: "2025-03-15", totalMarks: 100, class: "10", type: "exam" },
+  { id: "2", title: "Class Test - Mathematics", subject: "Mathematics", date: "2025-03-22", totalMarks: 50, class: "9", type: "test" },
+  { id: "3", title: "Annual Exam", subject: "", date: "2025-04-10", totalMarks: 100, class: "8", type: "exam" },
+  { id: "4", title: "Class Test - Science", subject: "Science", date: "2025-04-05", totalMarks: 50, class: "10", type: "test" },
+  { id: "5", title: "Unit Test - English", subject: "English", date: "2025-03-28", totalMarks: 25, class: "7", type: "test" }
 ];
 
-// Create mock subjects
-const mockSubjects = [
-  "Mathematics",
-  "Physics",
-  "Chemistry",
-  "Biology",
-  "English",
-  "History",
-  "Geography",
-  "Computer Science",
+// Mock marks data
+const mockMarks = [
+  { id: "m1", examId: "1", studentId: "student-1", marksObtained: 85, feedback: "Good performance" },
+  { id: "m2", examId: "1", studentId: "student-2", marksObtained: 72, feedback: "Can improve" },
+  { id: "m3", examId: "1", studentId: "student-3", marksObtained: 91, feedback: "Excellent work" },
+  { id: "m4", examId: "2", studentId: "student-1", marksObtained: 42, feedback: "Good effort" }
 ];
 
-// Mock events for tests and exams
-const initialEvents: CalendarEvent[] = [
-  {
-    id: "event-1",
-    title: "Mathematics Test",
-    start: "2025-04-15T09:00:00",
-    end: "2025-04-15T10:30:00",
-    allDay: false,
-    type: "test",
-    subject: "Mathematics",
-    class: "Grade 8",
-    maxMarks: 50,
-  },
-  {
-    id: "event-2",
-    title: "Mid-Term Examination",
-    start: "2025-05-01T09:00:00",
-    end: "2025-05-10T16:00:00",
-    allDay: true,
-    type: "exam",
-    class: "Grade 10",
-    maxMarks: 100,
-  },
-  {
-    id: "event-3",
-    title: "Physics Unit Test",
-    start: "2025-04-20T11:00:00",
-    end: "2025-04-20T12:00:00",
-    allDay: false,
-    type: "test",
-    subject: "Physics",
-    class: "Grade 9",
-    maxMarks: 25,
-  },
-];
+const classOptions = ["LKG", "UKG", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"];
 
 const Exam = () => {
-  const [user, setUser] = useState<User | null>(null);
-  const [events, setEvents] = useState<CalendarEvent[]>(initialEvents);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [eventTypeFilter, setEventTypeFilter] = useState<"all" | "test" | "exam">("all");
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isEditMode, setIsEditMode] = useState(false);
-  const [currentEvent, setCurrentEvent] = useState<CalendarEvent | null>(null);
+  const [activeTab, setActiveTab] = useState<"exams" | "tests">("exams");
+  const [search, setSearch] = useState("");
+  const [classFilter, setClassFilter] = useState("all");
+  const [selectedExam, setSelectedExam] = useState<any>(null);
+  const [marksData, setMarksData] = useState<Record<string, number>>({});
+  const [feedback, setFeedback] = useState<Record<string, string>>({});
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   
-  const [newEvent, setNewEvent] = useState<{
-    title: string;
-    type: "test" | "exam";
-    subject?: string;
-    class: string;
-    maxMarks: string;
-    date: string;
-    startTime: string;
-    endTime: string;
-    allDay: boolean;
-  }>({
-    title: "",
-    type: "test",
-    subject: "",
-    class: "",
-    maxMarks: "",
-    date: new Date().toISOString().split("T")[0],
-    startTime: "09:00",
-    endTime: "11:00",
-    allDay: false,
+  // Filter exams/tests based on search, class filter, and type
+  const filteredItems = mockExams.filter(item => {
+    const matchesSearch = item.title.toLowerCase().includes(search.toLowerCase());
+    const matchesClass = classFilter === "all" || item.class === classFilter;
+    const matchesType = activeTab === "exams" ? item.type === "exam" : item.type === "test";
+    
+    return matchesSearch && matchesClass && matchesType;
   });
-  
-  useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
-  }, []);
-  
-  useEffect(() => {
-    // Reset form data when dialog closes
-    if (!isDialogOpen) {
-      setNewEvent({
-        title: "",
-        type: "test",
-        subject: "",
-        class: "",
-        maxMarks: "",
-        date: new Date().toISOString().split("T")[0],
-        startTime: "09:00",
-        endTime: "11:00",
-        allDay: false,
-      });
-      setIsEditMode(false);
-      setCurrentEvent(null);
-    }
-  }, [isDialogOpen]);
-  
-  // Update form based on event type selection
-  useEffect(() => {
-    if (newEvent.type === "exam") {
-      setNewEvent(prev => ({ ...prev, subject: undefined }));
-    } else {
-      setNewEvent(prev => ({ ...prev, subject: prev.subject || "" }));
-    }
-  }, [newEvent.type]);
-  
-  // Filter events based on search term and event type
-  const filteredEvents = events.filter((event) => {
-    const matchesSearch = event.title.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesFilter = eventTypeFilter === "all" || event.type === eventTypeFilter;
-    
-    return matchesSearch && matchesFilter;
-  });
-  
-  // Add or update event
-  const handleSaveEvent = () => {
-    const startDateTime = `${newEvent.date}T${newEvent.startTime}:00`;
-    const endDateTime = `${newEvent.date}T${newEvent.endTime}:00`;
-    
-    const eventData: CalendarEvent = {
-      id: isEditMode && currentEvent ? currentEvent.id : `event-${Date.now()}`,
-      title: newEvent.title,
-      start: startDateTime,
-      end: endDateTime,
-      allDay: newEvent.allDay,
-      type: newEvent.type,
-      subject: newEvent.type === "test" ? newEvent.subject : undefined,
-      class: newEvent.class,
-      maxMarks: parseInt(newEvent.maxMarks),
-    };
-    
-    if (isEditMode && currentEvent) {
-      // Update existing event
-      setEvents(prev => prev.map(e => (e.id === currentEvent.id ? eventData : e)));
-      toast.success("Test/Exam updated successfully");
-    } else {
-      // Add new event
-      setEvents(prev => [...prev, eventData]);
-      toast.success("Test/Exam added successfully");
-    }
-    
-    setIsDialogOpen(false);
+
+  // Get students for a specific class
+  const getStudentsForClass = (classValue: string) => {
+    return mockStudents.filter(student => student.class === classValue);
   };
-  
-  // Edit event
-  const handleEditEvent = (event: CalendarEvent) => {
-    setCurrentEvent(event);
-    setIsEditMode(true);
+
+  // Handle mark update
+  const handleMarkUpdate = (studentId: string, mark: number) => {
+    setMarksData(prev => ({
+      ...prev,
+      [studentId]: mark
+    }));
+  };
+
+  // Handle feedback update
+  const handleFeedbackUpdate = (studentId: string, text: string) => {
+    setFeedback(prev => ({
+      ...prev,
+      [studentId]: text
+    }));
+  };
+
+  // Save marks for an exam/test
+  const saveMarks = () => {
+    if (!selectedExam) return;
     
-    // Parse date and times from event
-    const eventDate = new Date(event.start).toISOString().split("T")[0];
-    const eventStartTime = new Date(event.start).toTimeString().substring(0, 5);
-    const eventEndTime = new Date(event.end).toTimeString().substring(0, 5);
+    // In a real app, this would send data to an API
+    toast.success("Marks saved successfully");
     
-    setNewEvent({
-      title: event.title,
-      type: event.type as "test" | "exam",
-      subject: event.subject,
-      class: event.class || "",
-      maxMarks: event.maxMarks?.toString() || "",
-      date: eventDate,
-      startTime: eventStartTime,
-      endTime: eventEndTime,
-      allDay: event.allDay,
+    // Close the dialog
+    setSelectedExam(null);
+  };
+
+  // Export marks data to Excel
+  const exportMarksToExcel = () => {
+    if (!selectedExam) return;
+    
+    const students = getStudentsForClass(selectedExam.class);
+    
+    const exportData = students.map(student => {
+      const existingMark = mockMarks.find(m => m.examId === selectedExam.id && m.studentId === student.id);
+      const currentMark = marksData[student.id] !== undefined ? marksData[student.id] : (existingMark?.marksObtained || 0);
+      const currentFeedback = feedback[student.id] !== undefined ? feedback[student.id] : (existingMark?.feedback || "");
+      
+      return {
+        "Student Name": student.name,
+        "Enrollment No": student.enrollmentNo,
+        "Class": student.class,
+        "Section": student.section,
+        "Marks": currentMark,
+        "Out Of": selectedExam.totalMarks,
+        "Percentage": ((currentMark / selectedExam.totalMarks) * 100).toFixed(2) + "%",
+        "Feedback": currentFeedback
+      };
     });
     
-    setIsDialogOpen(true);
-  };
-  
-  // Delete event
-  const handleDeleteEvent = (id: string) => {
-    setEvents(prev => prev.filter(e => e.id !== id));
-    toast.success("Test/Exam deleted successfully");
-  };
-  
-  // Export events to Excel
-  const exportToExcel = () => {
-    const data = events.map(event => ({
-      "Title": event.title,
-      "Type": event.type.charAt(0).toUpperCase() + event.type.slice(1),
-      "Subject": event.subject || "Multiple",
-      "Class": event.class || "",
-      "Date": new Date(event.start).toLocaleDateString(),
-      "Start Time": event.allDay ? "All Day" : new Date(event.start).toLocaleTimeString(),
-      "End Time": event.allDay ? "All Day" : new Date(event.end).toLocaleTimeString(),
-      "Maximum Marks": event.maxMarks || ""
-    }));
+    // Create worksheet
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
     
-    const worksheet = XLSX.utils.json_to_sheet(data);
+    // Create workbook and add worksheet
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Tests and Exams");
-    XLSX.writeFile(workbook, "tests_and_exams.xlsx");
-    toast.success("Data exported to Excel");
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Exam Marks");
+    
+    // Export Excel file
+    XLSX.writeFile(workbook, `${selectedExam.title.replace(/\s+/g, '_')}_marks.xlsx`);
+    
+    toast.success("Marks data exported to Excel");
   };
-  
-  // Import from Excel
-  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const data = new Uint8Array(e.target?.result as ArrayBuffer);
-        const workbook = XLSX.read(data, { type: 'array' });
-        
-        const firstSheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[firstSheetName];
-        
-        const jsonData = XLSX.utils.sheet_to_json(worksheet);
-        
-        // Process imported data
-        const importedEvents = jsonData.map((row: any, index) => {
-          const typeStr = row["Type"]?.toLowerCase() || "test";
-          const type = typeStr === "exam" ? "exam" : "test";
-          
-          const dateObj = new Date();
-          if (row["Date"]) {
-            // Try to parse the date
-            try {
-              const parsed = new Date(row["Date"]);
-              if (!isNaN(parsed.getTime())) {
-                dateObj.setFullYear(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
-              }
-            } catch (err) {
-              console.error("Date parsing error:", err);
-            }
-          }
-          
-          // Create start and end date objects
-          const startDate = new Date(dateObj);
-          const endDate = new Date(dateObj);
-          
-          // Set times if provided
-          if (row["Start Time"] && row["Start Time"] !== "All Day") {
-            try {
-              const timeParts = row["Start Time"].split(":");
-              if (timeParts.length >= 2) {
-                startDate.setHours(parseInt(timeParts[0]), parseInt(timeParts[1]));
-              }
-            } catch (err) {
-              console.error("Time parsing error:", err);
-            }
-          }
-          
-          if (row["End Time"] && row["End Time"] !== "All Day") {
-            try {
-              const timeParts = row["End Time"].split(":");
-              if (timeParts.length >= 2) {
-                endDate.setHours(parseInt(timeParts[0]), parseInt(timeParts[1]));
-              } else {
-                // Default end time is start time + 1 hour
-                endDate.setHours(startDate.getHours() + 1, startDate.getMinutes());
-              }
-            } catch (err) {
-              console.error("Time parsing error:", err);
-              endDate.setHours(startDate.getHours() + 1, startDate.getMinutes());
-            }
-          } else {
-            // Default end time is start time + 1 hour
-            endDate.setHours(startDate.getHours() + 1, startDate.getMinutes());
-          }
-          
-          const isAllDay = row["Start Time"] === "All Day" || row["End Time"] === "All Day";
-          
-          return {
-            id: `imported-event-${Date.now()}-${index}`,
-            title: row["Title"] || `Imported ${type}`,
-            start: startDate.toISOString(),
-            end: endDate.toISOString(),
-            allDay: isAllDay,
-            type: type as "test" | "exam",
-            subject: type === "test" ? (row["Subject"] || "") : undefined,
-            class: row["Class"] || "",
-            maxMarks: parseInt(row["Maximum Marks"]) || (type === "test" ? 50 : 100),
-          };
-        });
-        
-        setEvents(prev => [...prev, ...importedEvents]);
-        toast.success(`Imported ${importedEvents.length} tests/exams`);
-      } catch (error) {
-        console.error("Import error:", error);
-        toast.error("Failed to import data. Please check the file format.");
-      }
-    };
-    
-    reader.readAsArrayBuffer(file);
-    
-    // Reset the input
-    e.target.value = "";
-  };
-  
-  if (!user) {
-    return <div className="flex items-center justify-center h-screen">Loading...</div>;
-  }
   
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div className="flex justify-between items-center">
+        <div className="flex justify-between items-start">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Tests & Exams</h1>
+            <h1 className="text-3xl font-bold tracking-tight">Test & Exam</h1>
             <p className="text-muted-foreground">
-              Manage and schedule tests and exams for students
+              Manage student tests and exams
             </p>
           </div>
+          <Button onClick={() => setIsAddModalOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add New
+          </Button>
+        </div>
+        
+        <Tabs defaultValue="exams" value={activeTab} onValueChange={(value) => setActiveTab(value as "exams" | "tests")}>
+          <div className="flex items-center justify-between mb-4">
+            <TabsList>
+              <TabsTrigger value="exams">Exams</TabsTrigger>
+              <TabsTrigger value="tests">Tests</TabsTrigger>
+            </TabsList>
+          </div>
           
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={exportToExcel}>
-              <Download className="mr-2 h-4 w-4" />
-              Export to Excel
-            </Button>
-            
-            <div>
-              <Input
-                type="file"
-                id="excel-import"
-                className="hidden"
-                accept=".xlsx,.xls"
-                onChange={handleImport}
-              />
-              <Button variant="outline" onClick={() => document.getElementById("excel-import")?.click()}>
-                <Upload className="mr-2 h-4 w-4" />
-                Import from Excel
-              </Button>
-            </div>
-            
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Test/Exam
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>
-                    {isEditMode ? "Edit Test/Exam" : "Add New Test/Exam"}
-                  </DialogTitle>
-                  <DialogDescription>
-                    {isEditMode 
-                      ? "Update the details for this test or exam" 
-                      : "Fill in the details to schedule a new test or exam"}
-                  </DialogDescription>
-                </DialogHeader>
-                
-                <div className="grid gap-4 py-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="type">Event Type</Label>
-                    <Select 
-                      value={newEvent.type} 
-                      onValueChange={(value: "test" | "exam") => 
-                        setNewEvent({...newEvent, type: value})}
-                    >
-                      <SelectTrigger id="type">
-                        <SelectValue placeholder="Select event type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="test">Test</SelectItem>
-                        <SelectItem value="exam">Exam</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="title">Title</Label>
-                    <Input 
-                      id="title" 
-                      value={newEvent.title} 
-                      onChange={(e) => setNewEvent({...newEvent, title: e.target.value})} 
-                      placeholder={`Enter ${newEvent.type} name`} 
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex flex-col md:flex-row gap-4 mb-6">
+                {/* Search */}
+                <div className="flex-1">
+                  <div className="relative">
+                    <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder={`Search ${activeTab}...`}
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                      className="pl-8"
                     />
                   </div>
-                  
-                  {newEvent.type === "test" && (
+                </div>
+                
+                {/* Class Filter */}
+                <div className="w-full md:w-48">
+                  <Select value={classFilter} onValueChange={setClassFilter}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Filter by class" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Classes</SelectItem>
+                      {classOptions.map((cls) => (
+                        <SelectItem key={cls} value={cls}>
+                          Class {cls}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                {/* Export Button */}
+                <Button variant="outline">
+                  <Download className="mr-2 h-4 w-4" />
+                  Export
+                </Button>
+              </div>
+              
+              <TabsContent value="exams" className="pt-2">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Exam Name</TableHead>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Class</TableHead>
+                      <TableHead>Total Marks</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredItems.length > 0 ? (
+                      filteredItems.map((exam) => (
+                        <TableRow key={exam.id}>
+                          <TableCell className="font-medium">{exam.title}</TableCell>
+                          <TableCell>{exam.date}</TableCell>
+                          <TableCell>Class {exam.class}</TableCell>
+                          <TableCell>{exam.totalMarks}</TableCell>
+                          <TableCell className="text-right">
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => setSelectedExam(exam)}
+                            >
+                              <FileEdit className="h-4 w-4 mr-2" />
+                              Manage Marks
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                          No exams found matching your search criteria
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </TabsContent>
+              
+              <TabsContent value="tests" className="pt-2">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Test Name</TableHead>
+                      <TableHead>Subject</TableHead>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Class</TableHead>
+                      <TableHead>Total Marks</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredItems.length > 0 ? (
+                      filteredItems.map((test) => (
+                        <TableRow key={test.id}>
+                          <TableCell className="font-medium">{test.title}</TableCell>
+                          <TableCell>{test.subject}</TableCell>
+                          <TableCell>{test.date}</TableCell>
+                          <TableCell>Class {test.class}</TableCell>
+                          <TableCell>{test.totalMarks}</TableCell>
+                          <TableCell className="text-right">
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => setSelectedExam(test)}
+                            >
+                              <FileEdit className="h-4 w-4 mr-2" />
+                              Manage Marks
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                          No tests found matching your search criteria
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </TabsContent>
+            </CardContent>
+          </Card>
+        </Tabs>
+        
+        {/* Exam/Test Marks Management Dialog */}
+        {selectedExam && (
+          <Dialog open={!!selectedExam} onOpenChange={(open) => !open && setSelectedExam(null)}>
+            <DialogContent className="max-w-3xl">
+              <DialogHeader>
+                <DialogTitle>
+                  Manage Marks: {selectedExam.title}
+                </DialogTitle>
+              </DialogHeader>
+              <div className="py-4">
+                <div className="flex justify-between items-center mb-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Class {selectedExam.class}</p>
+                    <p className="text-sm text-muted-foreground">Total Marks: {selectedExam.totalMarks}</p>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={exportMarksToExcel}>
+                    <Download className="h-4 w-4 mr-2" />
+                    Export Marks
+                  </Button>
+                </div>
+                
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Student</TableHead>
+                        <TableHead>Enrollment No</TableHead>
+                        <TableHead>Section</TableHead>
+                        <TableHead>Marks</TableHead>
+                        <TableHead>Feedback</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {getStudentsForClass(selectedExam.class).map((student) => {
+                        const existingMark = mockMarks.find(
+                          m => m.examId === selectedExam.id && m.studentId === student.id
+                        );
+                        
+                        const studentMark = marksData[student.id] !== undefined 
+                          ? marksData[student.id]
+                          : (existingMark?.marksObtained || 0);
+                          
+                        const studentFeedback = feedback[student.id] !== undefined 
+                          ? feedback[student.id] 
+                          : (existingMark?.feedback || "");
+                        
+                        return (
+                          <TableRow key={student.id}>
+                            <TableCell>{student.name}</TableCell>
+                            <TableCell>{student.enrollmentNo}</TableCell>
+                            <TableCell>{student.section}</TableCell>
+                            <TableCell>
+                              <Input 
+                                type="number" 
+                                min="0" 
+                                max={selectedExam.totalMarks}
+                                value={studentMark} 
+                                onChange={(e) => handleMarkUpdate(student.id, parseInt(e.target.value) || 0)}
+                                className="w-20"
+                              />
+                              <span className="ml-2 text-xs text-muted-foreground">/ {selectedExam.totalMarks}</span>
+                            </TableCell>
+                            <TableCell>
+                              <Input 
+                                value={studentFeedback} 
+                                onChange={(e) => handleFeedbackUpdate(student.id, e.target.value)}
+                                placeholder="Add feedback"
+                              />
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setSelectedExam(null)}>Cancel</Button>
+                <Button onClick={saveMarks}>Save Marks</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        )}
+        
+        {/* Add New Test/Exam Dialog */}
+        <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add New Test/Exam</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <Tabs defaultValue="exam" className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="exam">Exam</TabsTrigger>
+                  <TabsTrigger value="test">Test</TabsTrigger>
+                </TabsList>
+                <TabsContent value="exam" className="space-y-4 pt-4">
+                  <div className="space-y-2">
+                    <label htmlFor="examName" className="text-sm font-medium">Exam Name</label>
+                    <Input id="examName" placeholder="e.g. Mid Term Exam" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="subject">Subject</Label>
-                      <Select 
-                        value={newEvent.subject} 
-                        onValueChange={(value) => setNewEvent({...newEvent, subject: value})}
-                      >
-                        <SelectTrigger id="subject">
-                          <SelectValue placeholder="Select subject" />
+                      <label htmlFor="examClass" className="text-sm font-medium">Class</label>
+                      <Select>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select class" />
                         </SelectTrigger>
                         <SelectContent>
-                          {mockSubjects.map((subject) => (
-                            <SelectItem key={subject} value={subject}>
-                              {subject}
+                          {classOptions.map((cls) => (
+                            <SelectItem key={cls} value={cls}>
+                              Class {cls}
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                     </div>
-                  )}
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="class">Class</Label>
-                    <Select 
-                      value={newEvent.class} 
-                      onValueChange={(value) => setNewEvent({...newEvent, class: value})}
-                    >
-                      <SelectTrigger id="class">
-                        <SelectValue placeholder="Select class" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {mockClasses.map((cls) => (
-                          <SelectItem key={cls.id} value={cls.name}>
-                            {cls.name} - {cls.section}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="maxMarks">Maximum Marks</Label>
-                    <Input 
-                      id="maxMarks" 
-                      type="number" 
-                      value={newEvent.maxMarks} 
-                      onChange={(e) => setNewEvent({...newEvent, maxMarks: e.target.value})} 
-                      placeholder="Enter maximum marks" 
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="date">Date</Label>
-                    <Input 
-                      id="date" 
-                      type="date" 
-                      value={newEvent.date} 
-                      onChange={(e) => setNewEvent({...newEvent, date: e.target.value})} 
-                    />
-                  </div>
-                  
-                  <div className="flex items-center space-x-2 mb-4">
-                    <input
-                      type="checkbox"
-                      id="allDay"
-                      checked={newEvent.allDay}
-                      onChange={(e) => setNewEvent({...newEvent, allDay: e.target.checked})}
-                      className="rounded border-gray-300 text-primary focus:ring-primary"
-                    />
-                    <Label htmlFor="allDay">All Day Event</Label>
-                  </div>
-                  
-                  {!newEvent.allDay && (
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="startTime">Start Time</Label>
-                        <Input 
-                          id="startTime" 
-                          type="time" 
-                          value={newEvent.startTime} 
-                          onChange={(e) => setNewEvent({...newEvent, startTime: e.target.value})} 
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="endTime">End Time</Label>
-                        <Input 
-                          id="endTime" 
-                          type="time" 
-                          value={newEvent.endTime} 
-                          onChange={(e) => setNewEvent({...newEvent, endTime: e.target.value})} 
-                        />
-                      </div>
+                    <div className="space-y-2">
+                      <label htmlFor="examMarks" className="text-sm font-medium">Max Marks</label>
+                      <Input id="examMarks" type="number" placeholder="e.g. 100" />
                     </div>
-                  )}
-                </div>
-                
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-                    Cancel
-                  </Button>
-                  <Button 
-                    onClick={handleSaveEvent} 
-                    disabled={!newEvent.title || !newEvent.class || !newEvent.maxMarks}
-                  >
-                    {isEditMode ? "Update" : "Add"}
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-          </div>
-        </div>
-        
-        <Tabs defaultValue="all">
-          <TabsList className="mb-4">
-            <TabsTrigger value="all" onClick={() => setEventTypeFilter("all")}>
-              All
-            </TabsTrigger>
-            <TabsTrigger value="test" onClick={() => setEventTypeFilter("test")}>
-              Tests
-            </TabsTrigger>
-            <TabsTrigger value="exam" onClick={() => setEventTypeFilter("exam")}>
-              Exams
-            </TabsTrigger>
-          </TabsList>
-          
-          <Card>
-            <CardHeader className="pb-2">
-              <div className="flex justify-between items-center">
-                <CardTitle>Upcoming Tests & Exams</CardTitle>
-                <div className="max-w-sm">
-                  <Input
-                    placeholder="Search by title..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                </div>
-              </div>
-            </CardHeader>
-            
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Title</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>{eventTypeFilter === "exam" ? "Class" : "Subject"}</TableHead>
-                    <TableHead>Class</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Time</TableHead>
-                    <TableHead>Max Marks</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredEvents.length > 0 ? (
-                    filteredEvents.map((event) => (
-                      <TableRow key={event.id}>
-                        <TableCell className="font-medium">{event.title}</TableCell>
-                        <TableCell>
-                          <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            event.type === "exam" 
-                              ? "bg-purple-100 text-purple-800" 
-                              : "bg-blue-100 text-blue-800"
-                          }`}>
-                            {event.type === "exam" ? "Exam" : "Test"}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          {event.type === "test" ? event.subject : "Multiple"}
-                        </TableCell>
-                        <TableCell>{event.class}</TableCell>
-                        <TableCell>{new Date(event.start).toLocaleDateString()}</TableCell>
-                        <TableCell>
-                          {event.allDay 
-                            ? "All Day" 
-                            : `${new Date(event.start).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} - ${new Date(event.end).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`
-                          }
-                        </TableCell>
-                        <TableCell>{event.maxMarks}</TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              onClick={() => handleEditEvent(event)}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              onClick={() => handleDeleteEvent(event.id)}
-                            >
-                              <Trash className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
-                        No tests or exams found
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </Tabs>
+                  </div>
+                  <div className="space-y-2">
+                    <label htmlFor="examDate" className="text-sm font-medium">Exam Date</label>
+                    <Input id="examDate" type="date" />
+                  </div>
+                </TabsContent>
+                <TabsContent value="test" className="space-y-4 pt-4">
+                  <div className="space-y-2">
+                    <label htmlFor="testName" className="text-sm font-medium">Test Name</label>
+                    <Input id="testName" placeholder="e.g. Class Test - Mathematics" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label htmlFor="testSubject" className="text-sm font-medium">Subject</label>
+                      <Input id="testSubject" placeholder="e.g. Mathematics" />
+                    </div>
+                    <div className="space-y-2">
+                      <label htmlFor="testMarks" className="text-sm font-medium">Max Marks</label>
+                      <Input id="testMarks" type="number" placeholder="e.g. 50" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label htmlFor="testClass" className="text-sm font-medium">Class</label>
+                      <Select>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select class" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {classOptions.map((cls) => (
+                            <SelectItem key={cls} value={cls}>
+                              Class {cls}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <label htmlFor="testDate" className="text-sm font-medium">Test Date</label>
+                      <Input id="testDate" type="date" />
+                    </div>
+                  </div>
+                </TabsContent>
+              </Tabs>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsAddModalOpen(false)}>Cancel</Button>
+              <Button onClick={() => {
+                toast.success("New test/exam added successfully");
+                setIsAddModalOpen(false);
+              }}>Add</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   );

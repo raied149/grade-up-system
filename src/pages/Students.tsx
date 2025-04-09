@@ -52,14 +52,6 @@ const Students = () => {
     { id: 2, test: "Class Test", subject: "Science", marks: 42, maxMarks: 50, date: "2025-03-10" },
     { id: 3, test: "Annual Exam", subject: "English", marks: 72, maxMarks: 100, date: "2025-04-05" }
   ];
-  
-  const mockStudentAttendance = [
-    { id: 1, date: "2025-04-01", status: "present" },
-    { id: 2, date: "2025-04-02", status: "present" },
-    { id: 3, date: "2025-04-03", status: "absent" },
-    { id: 4, date: "2025-04-04", status: "present" },
-    { id: 5, date: "2025-04-05", status: "present" }
-  ];
 
   // Export students data to Excel
   const exportToExcel = () => {
@@ -217,6 +209,7 @@ const Students = () => {
                     <th className="text-left py-3 px-4 font-medium">Enrollment No</th>
                     <th className="text-left py-3 px-4 font-medium">Class</th>
                     <th className="text-left py-3 px-4 font-medium">Section</th>
+                    <th className="text-left py-3 px-4 font-medium">Guardian</th>
                     <th className="text-left py-3 px-4 font-medium">Attendance</th>
                     <th className="text-right py-3 px-4 font-medium">Actions</th>
                   </tr>
@@ -229,6 +222,7 @@ const Students = () => {
                         <td className="py-3 px-4">{student.enrollmentNo}</td>
                         <td className="py-3 px-4">{student.class || "Not Specified"}</td>
                         <td className="py-3 px-4">{student.section}</td>
+                        <td className="py-3 px-4">{student.guardianName || "Not Specified"}</td>
                         <td className="py-3 px-4">
                           <div className="flex items-center gap-2">
                             <div className="w-full bg-gray-200 rounded-full h-2.5">
@@ -320,34 +314,10 @@ const Students = () => {
                                   </div>
                                   
                                   <div>
-                                    <h3 className="text-lg font-semibold mb-4">Recent Attendance</h3>
-                                    <Table>
-                                      <TableHeader>
-                                        <TableRow>
-                                          <TableHead>Date</TableHead>
-                                          <TableHead>Status</TableHead>
-                                        </TableRow>
-                                      </TableHeader>
-                                      <TableBody>
-                                        {mockStudentAttendance.map((record) => (
-                                          <TableRow key={record.id}>
-                                            <TableCell>{record.date}</TableCell>
-                                            <TableCell>
-                                              <span className={`capitalize ${
-                                                record.status === "present" ? "text-green-600" :
-                                                record.status === "absent" ? "text-red-600" : "text-yellow-600"
-                                              }`}>
-                                                {record.status}
-                                              </span>
-                                            </TableCell>
-                                          </TableRow>
-                                        ))}
-                                      </TableBody>
-                                    </Table>
-                                    
-                                    <div className="mt-4">
-                                      <p className="text-sm text-muted-foreground">Overall Attendance</p>
-                                      <div className="flex items-center gap-2 mt-1">
+                                    <h3 className="text-lg font-semibold mb-4">Attendance Summary</h3>
+                                    <div className="bg-muted p-4 rounded-md">
+                                      <p className="text-sm text-muted-foreground mb-2">Overall Attendance</p>
+                                      <div className="flex items-center gap-2">
                                         <div className="w-full bg-gray-200 rounded-full h-2.5">
                                           <div 
                                             className={`h-2.5 rounded-full ${
@@ -372,7 +342,7 @@ const Students = () => {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={6} className="text-center py-8 text-muted-foreground">
+                      <td colSpan={7} className="text-center py-8 text-muted-foreground">
                         No students found matching your search criteria
                       </td>
                     </tr>

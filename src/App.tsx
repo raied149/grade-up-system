@@ -18,6 +18,7 @@ import AddTeacher from "./pages/AddTeacher";
 import SignUp from "./pages/SignUp";
 import Fees from "./pages/Fees";
 import Exam from "./pages/Exam";
+import TimeTable from "./pages/TimeTable";
 
 const queryClient = new QueryClient();
 
@@ -41,6 +42,7 @@ const App = () => (
           <Route path="/signup" element={<SignUp />} />
           <Route path="/fees" element={<Fees />} />
           <Route path="/exam" element={<Exam />} />
+          <Route path="/timetable" element={<TimeTable />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

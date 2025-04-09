@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Download, UserPlus, Mail } from "lucide-react";
+import { Search, Download, UserPlus, Mail, Phone, Home } from "lucide-react";
 import { mockTeachers } from "@/lib/mockData";
 import { toast } from "sonner";
 import * as XLSX from 'xlsx';
@@ -45,7 +45,9 @@ const Teachers = () => {
       Email: teacher.email,
       Subject: teacher.subject,
       Qualifications: teacher.qualifications.join(", "),
-      Classes: teacher.classes.join(", ")
+      Classes: teacher.classes.join(", "),
+      "Phone Number": teacher.phoneNumber || "Not Provided",
+      Address: teacher.address || "Not Provided"
     }));
     
     // Create workbook and worksheet
@@ -169,7 +171,7 @@ const Teachers = () => {
                 <thead>
                   <tr className="border-b">
                     <th className="text-left py-3 px-4 font-medium">Name</th>
-                    <th className="text-left py-3 px-4 font-medium">Email</th>
+                    <th className="text-left py-3 px-4 font-medium">Contact</th>
                     <th className="text-left py-3 px-4 font-medium">Subject</th>
                     <th className="text-left py-3 px-4 font-medium">Qualifications</th>
                     <th className="text-left py-3 px-4 font-medium">Classes</th>
@@ -182,9 +184,23 @@ const Teachers = () => {
                       <tr key={teacher.id} className="border-b hover:bg-muted/50">
                         <td className="py-3 px-4">{teacher.name}</td>
                         <td className="py-3 px-4">
-                          <div className="flex items-center">
-                            <Mail className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
-                            {teacher.email}
+                          <div className="flex flex-col space-y-1">
+                            <div className="flex items-center">
+                              <Mail className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
+                              {teacher.email}
+                            </div>
+                            {teacher.phoneNumber && (
+                              <div className="flex items-center">
+                                <Phone className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
+                                {teacher.phoneNumber}
+                              </div>
+                            )}
+                            {teacher.address && (
+                              <div className="flex items-center">
+                                <Home className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
+                                <span className="truncate max-w-[200px]">{teacher.address}</span>
+                              </div>
+                            )}
                           </div>
                         </td>
                         <td className="py-3 px-4">{teacher.subject}</td>

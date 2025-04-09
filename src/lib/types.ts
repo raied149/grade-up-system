@@ -24,10 +24,10 @@ export interface Student {
   grade: string;  // Will display as "marks" but keeping the property name for compatibility
   enrollmentNo: string;
   attendancePercentage: number;
-  guardianName?: string; // New field for guardian name
-  guardianNumber?: string; // New field for guardian phone
-  address?: string; // New field for student address
-  class?: string; // New field for student class (LKG, UKG, 1st, etc.)
+  guardianName?: string;
+  guardianNumber?: string;
+  address?: string;
+  class?: string;
 }
 
 export interface Teacher {
@@ -37,6 +37,8 @@ export interface Teacher {
   subject: string;
   qualifications: string[];
   classes: string[];
+  phoneNumber?: string;  // Added phone number field
+  address?: string;      // Added address field
 }
 
 export interface TeacherAttendance {
@@ -77,8 +79,8 @@ export interface Exam {
   subject: string;
   date: string;
   totalMarks: number;
-  class?: string; // Added class field
-  type: "test" | "exam"; // Added type field
+  class?: string;
+  type: "test" | "exam";
 }
 
 export interface Mark {
@@ -95,12 +97,11 @@ export interface CalendarEvent {
   start: string;
   end: string;
   allDay: boolean;
-  type: "class" | "exam" | "meeting" | "holiday" | "task" | "test";
+  type: "class" | "exam" | "meeting" | "holiday" | "task" | "test" | "occasion";
   description?: string;
-  assignedTeachers?: string[]; // New field to support multiple teachers
-  maxMarks?: number; // For exam/test events
-  subject?: string; // For test events
-  class?: string; // For test/exam events
+  assignedTeachers?: string[];
+  maxMarks?: number;
+  subject?: string;
 }
 
 export interface AttendanceSummary {
@@ -125,7 +126,31 @@ export interface Fee {
   dueDate: string;
   status: "paid" | "not_paid" | "partial";
   paidAmount?: number;
-  pendingAmount?: number; // New field to track pending amount
+  pendingAmount?: number;
   paidDate?: string;
   description?: string;
+}
+
+export interface TimeTableEntry {
+  id: string;
+  day: "monday" | "tuesday" | "wednesday" | "thursday" | "friday" | "saturday" | "sunday";
+  periodNumber: number;
+  startTime: string;
+  endTime: string;
+  subject: string;
+  teacherId: string;
+  classId: string;
+  section: string;
+}
+
+export interface TimeTableDay {
+  isHoliday: boolean;
+  periods: TimeTableEntry[];
+}
+
+export interface TimeTable {
+  id: string;
+  classId: string;
+  section: string;
+  days: Record<string, TimeTableDay>;
 }
