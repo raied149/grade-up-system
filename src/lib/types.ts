@@ -27,10 +27,7 @@ export interface Student {
   guardianName?: string; // New field for guardian name
   guardianNumber?: string; // New field for guardian phone
   address?: string; // New field for student address
-  testType?: {  // Add test type information
-    name: string;
-    maxMarks: number;
-  };
+  class?: string; // New field for student class (LKG, UKG, 1st, etc.)
 }
 
 export interface Teacher {
@@ -128,6 +125,7 @@ export interface Fee {
   dueDate: string;
   status: "paid" | "not_paid" | "partial";
   paidAmount?: number;
+  pendingAmount?: number; // New field to track pending amount
   paidDate?: string;
   description?: string;
 }

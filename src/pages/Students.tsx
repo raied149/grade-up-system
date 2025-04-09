@@ -10,34 +10,68 @@ import { Search, Download, UserPlus } from "lucide-react";
 import { mockStudents } from "@/lib/mockData";
 import * as XLSX from 'xlsx';
 import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 const Students = () => {
   const [search, setSearch] = useState("");
-  const [gradeFilter, setGradeFilter] = useState("all");
   const [sectionFilter, setSectionFilter] = useState("all");
+  const [classFilter, setClassFilter] = useState("all");
+  const [selectedStudent, setSelectedStudent] = useState<any>(null);
   
-  // Get unique grades and sections for filters
-  const grades = Array.from(new Set(mockStudents.map(student => student.grade)));
+  // Get unique classes and sections for filters
+  const classes = Array.from(new Set(mockStudents.map(student => student.class || "Unknown")));
   const sections = Array.from(new Set(mockStudents.map(student => student.section)));
   
   // Filter students based on search and filters
   const filteredStudents = mockStudents.filter(student => {
     const matchesSearch = student.name.toLowerCase().includes(search.toLowerCase()) || 
-                          student.enrollmentNo.toLowerCase().includes(search.toLowerCase());
-    const matchesGrade = gradeFilter === "all" || student.grade === gradeFilter;
+                        student.enrollmentNo.toLowerCase().includes(search.toLowerCase());
+    const matchesClass = classFilter === "all" || student.class === classFilter;
     const matchesSection = sectionFilter === "all" || student.section === sectionFilter;
     
-    return matchesSearch && matchesGrade && matchesSection;
+    return matchesSearch && matchesClass && matchesSection;
   });
+
+  // Mock data for student details dialog
+  const mockStudentMarks = [
+    { id: 1, test: "Mid Term Exam", subject: "Mathematics", marks: 85, maxMarks: 100, date: "2025-02-15" },
+    { id: 2, test: "Class Test", subject: "Science", marks: 42, maxMarks: 50, date: "2025-03-10" },
+    { id: 3, test: "Annual Exam", subject: "English", marks: 72, maxMarks: 100, date: "2025-04-05" }
+  ];
+  
+  const mockStudentAttendance = [
+    { id: 1, date: "2025-04-01", status: "present" },
+    { id: 2, date: "2025-04-02", status: "present" },
+    { id: 3, date: "2025-04-03", status: "absent" },
+    { id: 4, date: "2025-04-04", status: "present" },
+    { id: 5, date: "2025-04-05", status: "present" }
+  ];
 
   // Export students data to Excel
   const exportToExcel = () => {
     const exportData = filteredStudents.map(student => ({
       Name: student.name,
       "Enrollment No": student.enrollmentNo,
-      Marks: student.grade,
+      Class: student.class || "Not Specified",
       Section: student.section,
-      Attendance: `${student.attendancePercentage}%`
+      Attendance: `${student.attendancePercentage}%`,
+      "Guardian Name": student.guardianName || "",
+      "Guardian Number": student.guardianNumber || "",
+      "Address": student.address || ""
     }));
     
     // Create workbook and worksheet
@@ -78,6 +112,11 @@ const Students = () => {
     reader.readAsBinaryString(file);
   };
   
+  // View student details
+  const handleViewStudent = (student: any) => {
+    setSelectedStudent(student);
+  };
+  
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -112,17 +151,17 @@ const Students = () => {
                 </div>
               </div>
               
-              {/* Grade Filter */}
+              {/* Class Filter */}
               <div className="w-full md:w-48">
-                <Select value={gradeFilter} onValueChange={setGradeFilter}>
+                <Select value={classFilter} onValueChange={setClassFilter}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Marks" />
+                    <SelectValue placeholder="Class" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Marks</SelectItem>
-                    {grades.map(grade => (
-                      <SelectItem key={grade} value={grade}>
-                        Marks: {grade}
+                    <SelectItem value="all">All Classes</SelectItem>
+                    {classes.map(cls => (
+                      <SelectItem key={cls} value={cls || "Unknown"}>
+                        {cls ? `Class ${cls}` : "Unknown"}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -176,7 +215,7 @@ const Students = () => {
                   <tr className="border-b">
                     <th className="text-left py-3 px-4 font-medium">Name</th>
                     <th className="text-left py-3 px-4 font-medium">Enrollment No</th>
-                    <th className="text-left py-3 px-4 font-medium">Marks</th>
+                    <th className="text-left py-3 px-4 font-medium">Class</th>
                     <th className="text-left py-3 px-4 font-medium">Section</th>
                     <th className="text-left py-3 px-4 font-medium">Attendance</th>
                     <th className="text-right py-3 px-4 font-medium">Actions</th>
@@ -188,7 +227,7 @@ const Students = () => {
                       <tr key={student.id} className="border-b hover:bg-muted/50">
                         <td className="py-3 px-4">{student.name}</td>
                         <td className="py-3 px-4">{student.enrollmentNo}</td>
-                        <td className="py-3 px-4">{student.grade}</td>
+                        <td className="py-3 px-4">{student.class || "Not Specified"}</td>
                         <td className="py-3 px-4">{student.section}</td>
                         <td className="py-3 px-4">
                           <div className="flex items-center gap-2">
@@ -206,7 +245,127 @@ const Students = () => {
                           </div>
                         </td>
                         <td className="py-3 px-4 text-right">
-                          <Button variant="ghost" size="sm">View</Button>
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button variant="ghost" size="sm" onClick={() => handleViewStudent(student)}>View</Button>
+                            </DialogTrigger>
+                            <DialogContent className="max-w-4xl">
+                              <DialogHeader>
+                                <DialogTitle>Student Details</DialogTitle>
+                              </DialogHeader>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4">
+                                {/* Basic Info */}
+                                <div className="space-y-4">
+                                  <h3 className="text-lg font-semibold">Basic Information</h3>
+                                  <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                      <p className="text-sm text-muted-foreground">Name</p>
+                                      <p className="font-medium">{student.name}</p>
+                                    </div>
+                                    <div>
+                                      <p className="text-sm text-muted-foreground">Enrollment No</p>
+                                      <p className="font-medium">{student.enrollmentNo}</p>
+                                    </div>
+                                    <div>
+                                      <p className="text-sm text-muted-foreground">Class</p>
+                                      <p className="font-medium">{student.class || "Not Specified"}</p>
+                                    </div>
+                                    <div>
+                                      <p className="text-sm text-muted-foreground">Section</p>
+                                      <p className="font-medium">{student.section}</p>
+                                    </div>
+                                  </div>
+                                  
+                                  <h3 className="text-lg font-semibold pt-2">Guardian Details</h3>
+                                  <div className="grid grid-cols-1 gap-4">
+                                    <div>
+                                      <p className="text-sm text-muted-foreground">Guardian Name</p>
+                                      <p className="font-medium">{student.guardianName || "Not Provided"}</p>
+                                    </div>
+                                    <div>
+                                      <p className="text-sm text-muted-foreground">Guardian Phone</p>
+                                      <p className="font-medium">{student.guardianNumber || "Not Provided"}</p>
+                                    </div>
+                                    <div>
+                                      <p className="text-sm text-muted-foreground">Address</p>
+                                      <p className="font-medium">{student.address || "Not Provided"}</p>
+                                    </div>
+                                  </div>
+                                </div>
+                                
+                                {/* Marks & Attendance */}
+                                <div className="space-y-6">
+                                  <div>
+                                    <h3 className="text-lg font-semibold mb-4">Test & Exam Marks</h3>
+                                    <Table>
+                                      <TableHeader>
+                                        <TableRow>
+                                          <TableHead>Test Name</TableHead>
+                                          <TableHead>Subject</TableHead>
+                                          <TableHead>Marks</TableHead>
+                                          <TableHead>Date</TableHead>
+                                        </TableRow>
+                                      </TableHeader>
+                                      <TableBody>
+                                        {mockStudentMarks.map((mark) => (
+                                          <TableRow key={mark.id}>
+                                            <TableCell>{mark.test}</TableCell>
+                                            <TableCell>{mark.subject}</TableCell>
+                                            <TableCell>{mark.marks}/{mark.maxMarks}</TableCell>
+                                            <TableCell>{mark.date}</TableCell>
+                                          </TableRow>
+                                        ))}
+                                      </TableBody>
+                                    </Table>
+                                  </div>
+                                  
+                                  <div>
+                                    <h3 className="text-lg font-semibold mb-4">Recent Attendance</h3>
+                                    <Table>
+                                      <TableHeader>
+                                        <TableRow>
+                                          <TableHead>Date</TableHead>
+                                          <TableHead>Status</TableHead>
+                                        </TableRow>
+                                      </TableHeader>
+                                      <TableBody>
+                                        {mockStudentAttendance.map((record) => (
+                                          <TableRow key={record.id}>
+                                            <TableCell>{record.date}</TableCell>
+                                            <TableCell>
+                                              <span className={`capitalize ${
+                                                record.status === "present" ? "text-green-600" :
+                                                record.status === "absent" ? "text-red-600" : "text-yellow-600"
+                                              }`}>
+                                                {record.status}
+                                              </span>
+                                            </TableCell>
+                                          </TableRow>
+                                        ))}
+                                      </TableBody>
+                                    </Table>
+                                    
+                                    <div className="mt-4">
+                                      <p className="text-sm text-muted-foreground">Overall Attendance</p>
+                                      <div className="flex items-center gap-2 mt-1">
+                                        <div className="w-full bg-gray-200 rounded-full h-2.5">
+                                          <div 
+                                            className={`h-2.5 rounded-full ${
+                                              student.attendancePercentage >= 90 ? "bg-green-600" :
+                                              student.attendancePercentage >= 75 ? "bg-yellow-400" :
+                                              "bg-red-600"
+                                            }`}
+                                            style={{ width: `${student.attendancePercentage}%` }}
+                                          ></div>
+                                        </div>
+                                        <span className="font-medium">{student.attendancePercentage}%</span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </DialogContent>
+                          </Dialog>
                           <Button variant="ghost" size="sm">Edit</Button>
                         </td>
                       </tr>

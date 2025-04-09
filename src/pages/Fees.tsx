@@ -50,6 +50,7 @@ const initialFees: Fee[] = [
     dueDate: "2025-05-01",
     status: "paid",
     paidAmount: 5000,
+    pendingAmount: 0,
     paidDate: "2025-04-05",
     description: "Tuition Fee - May 2025"
   },
@@ -59,6 +60,7 @@ const initialFees: Fee[] = [
     amount: 5000,
     dueDate: "2025-05-01",
     status: "not_paid",
+    pendingAmount: 5000,
     description: "Tuition Fee - May 2025"
   },
   {
@@ -68,6 +70,7 @@ const initialFees: Fee[] = [
     dueDate: "2025-05-01",
     status: "partial",
     paidAmount: 2500,
+    pendingAmount: 2500,
     paidDate: "2025-04-07",
     description: "Tuition Fee - May 2025"
   }
@@ -79,6 +82,9 @@ const Fees = () => {
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [isAddFeeDialogOpen, setIsAddFeeDialogOpen] = useState<boolean>(false);
   const [user, setUser] = useState<User | null>(null);
+  const [isPartialPaymentDialogOpen, setIsPartialPaymentDialogOpen] = useState<boolean>(false);
+  const [currentFee, setCurrentFee] = useState<Fee | null>(null);
+  const [partialAmount, setPartialAmount] = useState<string>("");
   
   const [newFee, setNewFee] = useState<{
     studentId: string;
@@ -116,12 +122,14 @@ const Fees = () => {
 
   // Handle adding a new fee
   const handleAddFee = () => {
+    const amount = parseFloat(newFee.amount);
     const newFeeRecord: Fee = {
       id: `fee-${Date.now()}`,
       studentId: newFee.studentId,
-      amount: parseFloat(newFee.amount),
+      amount: amount,
       dueDate: newFee.dueDate,
       status: "not_paid",
+      pendingAmount: amount,
       description: newFee.description
     };
     
@@ -140,39 +148,81 @@ const Fees = () => {
 
   // Handle updating fee status
   const handleUpdateFeeStatus = (feeId: string, newStatus: "paid" | "not_paid" | "partial") => {
-    const updatedFees = fees.map(fee => {
-      if (fee.id === feeId) {
-        const now = new Date().toISOString().split('T')[0];
-        
-        if (newStatus === "paid") {
-          return {
-            ...fee,
-            status: newStatus,
-            paidAmount: fee.amount,
-            paidDate: now
-          };
-        } else if (newStatus === "partial") {
-          // For partial, we'll use half the amount as a default
-          return {
-            ...fee,
-            status: newStatus,
-            paidAmount: fee.amount / 2,
-            paidDate: now
-          };
-        } else {
-          return {
-            ...fee,
-            status: newStatus,
-            paidAmount: undefined,
-            paidDate: undefined
-          };
+    if (newStatus === "partial") {
+      const fee = fees.find(f => f.id === feeId);
+      if (fee) {
+        setCurrentFee(fee);
+        setPartialAmount("");
+        setIsPartialPaymentDialogOpen(true);
+      }
+    } else {
+      const updatedFees = fees.map(fee => {
+        if (fee.id === feeId) {
+          const now = new Date().toISOString().split('T')[0];
+          
+          if (newStatus === "paid") {
+            return {
+              ...fee,
+              status: newStatus,
+              paidAmount: fee.amount,
+              pendingAmount: 0,
+              paidDate: now
+            };
+          } else {
+            return {
+              ...fee,
+              status: newStatus,
+              paidAmount: undefined,
+              pendingAmount: fee.amount,
+              paidDate: undefined
+            };
+          }
         }
+        return fee;
+      });
+      
+      setFees(updatedFees);
+      toast.success("Fee status updated");
+    }
+  };
+
+  // Handle partial payment submission
+  const handlePartialPaymentSubmit = () => {
+    if (!currentFee || !partialAmount) return;
+    
+    const paidAmount = parseFloat(partialAmount);
+    
+    // Validate paid amount
+    if (isNaN(paidAmount) || paidAmount <= 0) {
+      toast.error("Please enter a valid amount");
+      return;
+    }
+    
+    if (paidAmount > currentFee.amount) {
+      toast.error("Paid amount cannot be greater than total amount");
+      return;
+    }
+    
+    const now = new Date().toISOString().split('T')[0];
+    const pendingAmount = currentFee.amount - paidAmount;
+    
+    const updatedFees = fees.map(fee => {
+      if (fee.id === currentFee.id) {
+        return {
+          ...fee,
+          status: paidAmount === currentFee.amount ? "paid" : "partial",
+          paidAmount: paidAmount,
+          pendingAmount: pendingAmount,
+          paidDate: now
+        };
       }
       return fee;
     });
     
     setFees(updatedFees);
-    toast.success("Fee status updated");
+    toast.success(`Partial payment of $${paidAmount.toFixed(2)} recorded`);
+    setIsPartialPaymentDialogOpen(false);
+    setCurrentFee(null);
   };
 
   // Export fees data to Excel
@@ -185,6 +235,7 @@ const Fees = () => {
         "Due Date": fee.dueDate,
         "Status": fee.status === "paid" ? "Paid" : fee.status === "partial" ? "Partially Paid" : "Not Paid",
         "Paid Amount": fee.paidAmount || "",
+        "Pending Amount": fee.pendingAmount || "",
         "Paid Date": fee.paidDate || "",
         "Description": fee.description
       };
@@ -221,18 +272,27 @@ const Fees = () => {
           // Find student by name
           const studentName = row["Student Name"];
           const student = mockStudents.find(s => s.name === studentName);
+          const amount = parseFloat(row["Amount"]) || 0;
+          const paidAmount = row["Paid Amount"] ? parseFloat(row["Paid Amount"]) : undefined;
+          const pendingAmount = row["Pending Amount"] ? parseFloat(row["Pending Amount"]) : (amount - (paidAmount || 0));
+          
+          let status: "paid" | "not_paid" | "partial";
+          if (row["Status"]?.toLowerCase().includes("paid") && (paidAmount === amount || pendingAmount === 0)) {
+            status = "paid";
+          } else if (row["Status"]?.toLowerCase().includes("partial") || (paidAmount && paidAmount < amount)) {
+            status = "partial";
+          } else {
+            status = "not_paid";
+          }
           
           return {
             id: `fee-import-${Date.now()}-${index}`,
             studentId: student?.id || "unknown",
-            amount: parseFloat(row["Amount"]) || 0,
+            amount: amount,
             dueDate: row["Due Date"] || new Date().toISOString().split('T')[0],
-            status: row["Status"]?.toLowerCase().includes("paid") 
-              ? "paid" 
-              : row["Status"]?.toLowerCase().includes("partial") 
-              ? "partial" 
-              : "not_paid",
-            paidAmount: row["Paid Amount"] ? parseFloat(row["Paid Amount"]) : undefined,
+            status: status,
+            paidAmount: paidAmount,
+            pendingAmount: pendingAmount,
             paidDate: row["Paid Date"] || undefined,
             description: row["Description"] || ""
           };
@@ -380,6 +440,68 @@ const Fees = () => {
           </div>
         </div>
         
+        {/* Partial Payment Dialog */}
+        <Dialog open={isPartialPaymentDialogOpen} onOpenChange={setIsPartialPaymentDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Record Partial Payment</DialogTitle>
+              <DialogDescription>
+                Enter the amount paid by the student
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="grid gap-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="studentName">Student</Label>
+                <Input
+                  id="studentName"
+                  value={currentFee ? getStudentName(currentFee.studentId) : ""}
+                  readOnly
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="totalAmount">Total Fee Amount</Label>
+                <Input
+                  id="totalAmount"
+                  value={currentFee ? `$${currentFee.amount.toFixed(2)}` : ""}
+                  readOnly
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="paidAmount">Amount Being Paid</Label>
+                <Input
+                  id="paidAmount"
+                  type="number"
+                  value={partialAmount}
+                  onChange={(e) => setPartialAmount(e.target.value)}
+                  placeholder="Enter amount paid"
+                  className="appearance-auto"
+                />
+              </div>
+              
+              {currentFee && parseFloat(partialAmount) > 0 && !isNaN(parseFloat(partialAmount)) && (
+                <div className="space-y-2">
+                  <Label htmlFor="pendingAmount">Pending Amount</Label>
+                  <Input
+                    id="pendingAmount"
+                    value={`$${(currentFee.amount - parseFloat(partialAmount)).toFixed(2)}`}
+                    readOnly
+                  />
+                </div>
+              )}
+            </div>
+            
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsPartialPaymentDialogOpen(false)}>Cancel</Button>
+              <Button onClick={handlePartialPaymentSubmit} disabled={!partialAmount || isNaN(parseFloat(partialAmount))}>
+                Record Payment
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+        
         <Card>
           <CardHeader className="pb-2">
             <CardTitle>Fee Records</CardTitle>
@@ -413,6 +535,7 @@ const Fees = () => {
                   <TableHead>Due Date</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Paid Amount</TableHead>
+                  <TableHead>Pending Amount</TableHead>
                   <TableHead>Paid Date</TableHead>
                   <TableHead className="w-[80px]">Actions</TableHead>
                 </TableRow>
@@ -437,6 +560,7 @@ const Fees = () => {
                         </div>
                       </TableCell>
                       <TableCell>{fee.paidAmount ? `$${fee.paidAmount.toFixed(2)}` : "—"}</TableCell>
+                      <TableCell>{fee.pendingAmount ? `$${fee.pendingAmount.toFixed(2)}` : "—"}</TableCell>
                       <TableCell>{fee.paidDate || "—"}</TableCell>
                       <TableCell>
                         <DropdownMenu>
@@ -447,7 +571,7 @@ const Fees = () => {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem onClick={() => handleUpdateFeeStatus(fee.id, "paid")}>Mark as Paid</DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleUpdateFeeStatus(fee.id, "partial")}>Mark as Partial</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleUpdateFeeStatus(fee.id, "partial")}>Update Partial Payment</DropdownMenuItem>
                             <DropdownMenuItem onClick={() => handleUpdateFeeStatus(fee.id, "not_paid")}>Mark as Not Paid</DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -456,7 +580,7 @@ const Fees = () => {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center text-muted-foreground p-4">
+                    <TableCell colSpan={9} className="text-center text-muted-foreground p-4">
                       No fee records found
                     </TableCell>
                   </TableRow>

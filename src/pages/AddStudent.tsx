@@ -11,6 +11,10 @@ import { toast } from "sonner";
 import { Student, User } from "@/lib/types";
 import * as XLSX from 'xlsx';
 
+const classOptions = [
+  "LKG", "UKG", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"
+];
+
 const AddStudent = () => {
   const navigate = useNavigate();
   const [userRole, setUserRole] = useState<string | null>(null);
@@ -36,12 +40,11 @@ const AddStudent = () => {
   const [formData, setFormData] = useState({
     name: "",
     enrollmentNo: "",
-    section: "A",
-    marks: "",
-    testType: {
-      name: "",
-      maxMarks: 100
-    }
+    section: "",
+    class: "LKG",
+    guardianName: "",
+    guardianNumber: "",
+    address: ""
   });
   
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -51,24 +54,12 @@ const AddStudent = () => {
       [name]: value
     }));
   };
-
-  const handleTestTypeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData(prevState => ({
-      ...prevState,
-      testType: {
-        ...prevState.testType,
-        [name]: name === "maxMarks" ? parseInt(value) : value
-      }
-    }));
-  };
   
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
     // Validate form data
-    if (!formData.name || !formData.enrollmentNo || !formData.section || !formData.marks || 
-        !formData.testType.name) {
+    if (!formData.name || !formData.enrollmentNo || !formData.section || !formData.class) {
       toast.error("Please fill all required fields");
       return;
     }
@@ -79,12 +70,12 @@ const AddStudent = () => {
       name: formData.name,
       enrollmentNo: formData.enrollmentNo,
       section: formData.section,
-      grade: formData.marks, // We use marks as grade
+      grade: "", // We're removing marks/grade
+      class: formData.class,
       attendancePercentage: 100, // Default value for new student
-      testType: {
-        name: formData.testType.name,
-        maxMarks: formData.testType.maxMarks
-      }
+      guardianName: formData.guardianName,
+      guardianNumber: formData.guardianNumber,
+      address: formData.address
     };
     
     // In a real app, we would send this to an API
@@ -98,10 +89,11 @@ const AddStudent = () => {
     const worksheet = XLSX.utils.json_to_sheet([{
       Name: formData.name,
       "Enrollment No": formData.enrollmentNo,
+      Class: formData.class,
       Section: formData.section,
-      Marks: formData.marks,
-      "Test Name": formData.testType.name,
-      "Max Marks": formData.testType.maxMarks
+      "Guardian Name": formData.guardianName,
+      "Guardian Number": formData.guardianNumber,
+      Address: formData.address
     }]);
     
     // Create a workbook
@@ -134,12 +126,11 @@ const AddStudent = () => {
           setFormData({
             name: firstStudent.Name || "",
             enrollmentNo: firstStudent["Enrollment No"] || "",
-            section: firstStudent.Section || "A",
-            marks: firstStudent.Marks?.toString() || "",
-            testType: {
-              name: firstStudent["Test Name"] || "",
-              maxMarks: parseInt(firstStudent["Max Marks"]) || 100
-            }
+            class: firstStudent.Class || "LKG",
+            section: firstStudent.Section || "",
+            guardianName: firstStudent["Guardian Name"] || "",
+            guardianNumber: firstStudent["Guardian Number"] || "",
+            address: firstStudent.Address || ""
           });
           
           toast.success(`Successfully imported ${jsonData.length} students. First student loaded in form.`);
@@ -211,65 +202,70 @@ const AddStudent = () => {
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="section">Section</Label>
+                  <Label htmlFor="class">Class</Label>
                   <Select 
-                    value={formData.section}
-                    onValueChange={(value) => setFormData({...formData, section: value})}
+                    value={formData.class}
+                    onValueChange={(value) => setFormData({...formData, class: value})}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select section" />
+                      <SelectValue placeholder="Select class" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="A">Section A</SelectItem>
-                      <SelectItem value="B">Section B</SelectItem>
-                      <SelectItem value="C">Section C</SelectItem>
+                      {classOptions.map(option => (
+                        <SelectItem key={option} value={option}>
+                          Class {option}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="marks">Marks</Label>
+                  <Label htmlFor="section">Section</Label>
                   <Input
-                    id="marks"
-                    name="marks"
-                    value={formData.marks}
+                    id="section"
+                    name="section"
+                    value={formData.section}
                     onChange={handleChange}
-                    placeholder="e.g. 85"
-                    type="number"
+                    placeholder="e.g. A, B, C"
                     required
                   />
                 </div>
               </div>
               
-              <div className="border p-4 rounded-md space-y-4">
-                <h3 className="font-medium">Test Type</h3>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="testName">Test Name</Label>
-                    <Input
-                      id="testName"
-                      name="name"
-                      value={formData.testType.name}
-                      onChange={handleTestTypeChange}
-                      placeholder="e.g. Mid Term Exam"
-                      required
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="maxMarks">Max Marks</Label>
-                    <Input
-                      id="maxMarks"
-                      name="maxMarks"
-                      value={formData.testType.maxMarks}
-                      onChange={handleTestTypeChange}
-                      placeholder="e.g. 100"
-                      type="number"
-                      required
-                    />
-                  </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="guardianName">Guardian Name</Label>
+                  <Input
+                    id="guardianName"
+                    name="guardianName"
+                    value={formData.guardianName}
+                    onChange={handleChange}
+                    placeholder="Guardian's full name"
+                  />
                 </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="guardianNumber">Guardian Phone Number</Label>
+                  <Input
+                    id="guardianNumber"
+                    name="guardianNumber"
+                    value={formData.guardianNumber}
+                    onChange={handleChange}
+                    placeholder="e.g. +1234567890"
+                  />
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="address">Address</Label>
+                <Input
+                  id="address"
+                  name="address"
+                  value={formData.address}
+                  onChange={handleChange}
+                  placeholder="Student's residential address"
+                />
               </div>
             </CardContent>
             
