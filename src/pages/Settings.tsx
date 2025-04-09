@@ -3,14 +3,12 @@ import React, { useState } from "react";
 import DashboardLayout from "@/components/layouts/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { User } from "@/lib/types";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useNavigate } from "react-router-dom";
 
 const Settings = () => {
@@ -23,8 +21,6 @@ const Settings = () => {
   const [profileForm, setProfileForm] = useState({
     name: user?.name || "",
     email: user?.email || "",
-    avatar: user?.avatar || "",
-    bio: ""
   });
   
   const [notificationSettings, setNotificationSettings] = useState({
@@ -39,6 +35,11 @@ const Settings = () => {
     newPassword: "",
     confirmPassword: ""
   });
+
+  const [emailUpdateForm, setEmailUpdateForm] = useState({
+    newEmail: "",
+    confirmEmail: ""
+  });
   
   const handleProfileSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,7 +49,6 @@ const Settings = () => {
         ...user,
         name: profileForm.name,
         email: profileForm.email,
-        avatar: profileForm.avatar
       };
       
       setUser(updatedUser);
@@ -87,20 +87,39 @@ const Settings = () => {
       confirmPassword: ""
     });
   };
+
+  const handleEmailUpdate = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (emailUpdateForm.newEmail !== emailUpdateForm.confirmEmail) {
+      toast.error("Emails don't match");
+      return;
+    }
+    
+    if (user) {
+      const updatedUser = {
+        ...user,
+        email: emailUpdateForm.newEmail
+      };
+      
+      setUser(updatedUser);
+      setProfileForm({...profileForm, email: emailUpdateForm.newEmail});
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+      toast.success("Email updated successfully");
+      
+      // Reset form
+      setEmailUpdateForm({
+        newEmail: "",
+        confirmEmail: ""
+      });
+    }
+  };
   
   // If user is not logged in, redirect to login page
   if (!user) {
     navigate("/");
     return null;
   }
-  
-  const getInitials = (name: string) => {
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase();
-  };
   
   return (
     <DashboardLayout>
@@ -117,6 +136,7 @@ const Settings = () => {
             <TabsTrigger value="profile">Profile</TabsTrigger>
             <TabsTrigger value="notifications">Notifications</TabsTrigger>
             <TabsTrigger value="security">Security</TabsTrigger>
+            <TabsTrigger value="email">Update Email</TabsTrigger>
           </TabsList>
           
           {/* Profile Tab */}
@@ -130,53 +150,28 @@ const Settings = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="flex items-center space-x-4">
-                    <Avatar className="h-20 w-20">
-                      <AvatarImage src={user.avatar} alt={user.name} />
-                      <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <Button type="button" variant="outline" size="sm">
-                        Change Avatar
-                      </Button>
-                      <p className="mt-2 text-xs text-muted-foreground">
-                        JPEG or PNG. 1MB max.
-                      </p>
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="name">Full Name</Label>
-                      <Input
-                        id="name"
-                        value={profileForm.name}
-                        onChange={(e) => setProfileForm({...profileForm, name: e.target.value})}
-                        required
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="email">Email</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        value={profileForm.email}
-                        onChange={(e) => setProfileForm({...profileForm, email: e.target.value})}
-                        required
-                      />
-                    </div>
-                  </div>
-                  
                   <div className="space-y-2">
-                    <Label htmlFor="bio">Bio</Label>
-                    <Textarea
-                      id="bio"
-                      placeholder="Tell us about yourself"
-                      value={profileForm.bio}
-                      onChange={(e) => setProfileForm({...profileForm, bio: e.target.value})}
-                      className="min-h-[100px]"
+                    <Label htmlFor="name">Full Name</Label>
+                    <Input
+                      id="name"
+                      value={profileForm.name}
+                      onChange={(e) => setProfileForm({...profileForm, name: e.target.value})}
+                      required
                     />
+                  </div>
+                    
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={profileForm.email}
+                      disabled
+                      className="bg-muted"
+                    />
+                    <p className="text-sm text-muted-foreground">
+                      To update your email address, please use the "Update Email" tab.
+                    </p>
                   </div>
                 </CardContent>
                 <CardFooter>
@@ -302,6 +297,57 @@ const Settings = () => {
                 </CardContent>
                 <CardFooter>
                   <Button type="submit">Update Password</Button>
+                </CardFooter>
+              </form>
+            </Card>
+          </TabsContent>
+
+          {/* Email Update Tab */}
+          <TabsContent value="email">
+            <Card>
+              <form onSubmit={handleEmailUpdate}>
+                <CardHeader>
+                  <CardTitle>Update Email Address</CardTitle>
+                  <CardDescription>
+                    Change your email address used for account access and notifications
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="currentEmail">Current Email</Label>
+                    <Input
+                      id="currentEmail"
+                      type="email"
+                      value={user.email}
+                      disabled
+                      className="bg-muted"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="newEmail">New Email</Label>
+                    <Input
+                      id="newEmail"
+                      type="email"
+                      value={emailUpdateForm.newEmail}
+                      onChange={(e) => setEmailUpdateForm({...emailUpdateForm, newEmail: e.target.value})}
+                      required
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="confirmEmail">Confirm New Email</Label>
+                    <Input
+                      id="confirmEmail"
+                      type="email"
+                      value={emailUpdateForm.confirmEmail}
+                      onChange={(e) => setEmailUpdateForm({...emailUpdateForm, confirmEmail: e.target.value})}
+                      required
+                    />
+                  </div>
+                </CardContent>
+                <CardFooter>
+                  <Button type="submit">Update Email</Button>
                 </CardFooter>
               </form>
             </Card>

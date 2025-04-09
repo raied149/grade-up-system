@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { mockClasses, mockStudentAttendance, mockStudents } from "@/lib/mockData";
 import { StudentAttendance as StudentAttendanceType, User } from "@/lib/types";
 import { toast } from "sonner";
+import * as XLSX from 'xlsx';
 
 const StudentAttendance = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -74,6 +75,43 @@ const StudentAttendance = () => {
     
     // Show success message
     toast.success(`Attendance marked as ${status} for ${mockStudents.find(s => s.id === studentId)?.name}`);
+  };
+
+  // Export attendance data to Excel
+  const exportToExcel = () => {
+    const dateString = format(date, "yyyy-MM-dd");
+    
+    // Get students based on selected class
+    const students = getStudents();
+    
+    // Transform attendance data for export
+    const exportData = students.map(student => {
+      const attendanceRecord = attendance[student.id];
+      
+      return {
+        Name: student.name,
+        "Enrollment No": student.enrollmentNo,
+        Section: student.section,
+        Date: dateString,
+        Status: attendanceRecord?.status || "Not marked",
+        "Marked At": attendanceRecord?.markedAt 
+          ? format(new Date(attendanceRecord.markedAt), "yyyy-MM-dd HH:mm:ss") 
+          : "-",
+        "Marked By": attendanceRecord?.markedById || "-"
+      };
+    });
+    
+    // Create worksheet
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    
+    // Create workbook and add worksheet
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Student Attendance");
+    
+    // Generate Excel file
+    XLSX.writeFile(workbook, `student_attendance_${dateString}.xlsx`);
+    
+    toast.success("Attendance data exported to Excel");
   };
 
   // Get students based on selected class
@@ -190,9 +228,9 @@ const StudentAttendance = () => {
               </div>
 
               {/* Export Button */}
-              <Button variant="outline">
+              <Button variant="outline" onClick={exportToExcel}>
                 <Download className="mr-2 h-4 w-4" />
-                Export
+                Export to Excel
               </Button>
             </div>
 

@@ -91,6 +91,7 @@ export interface CalendarEvent {
   allDay: boolean;
   type: "class" | "exam" | "meeting" | "holiday" | "task";
   description?: string;
+  assignedTeachers?: string[]; // New field to support multiple teachers
 }
 
 export interface AttendanceSummary {
