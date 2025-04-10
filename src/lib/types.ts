@@ -102,6 +102,7 @@ export interface CalendarEvent {
   assignedTeachers?: string[];
   maxMarks?: number;
   subject?: string;
+  class?: string; // Adding class property to fix type errors
 }
 
 export interface AttendanceSummary {
