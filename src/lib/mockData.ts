@@ -152,7 +152,6 @@ export const mockStudentAttendance: StudentAttendance[] = [
     id: "sa1",
     studentId: "student1",
     date: "2024-01-15",
-    classId: "LKG-A",
     status: "present",
     markedById: "teacher1",
     markedAt: "2024-01-15T08:45:00Z"
@@ -161,7 +160,30 @@ export const mockStudentAttendance: StudentAttendance[] = [
     id: "sa2",
     studentId: "student2",
     date: "2024-01-15",
-    classId: "UKG-B",
+    status: "present",
+    markedById: "teacher1",
+    markedAt: "2024-01-15T08:45:00Z"
+  },
+  {
+    id: "sa3",
+    studentId: "student3",
+    date: "2024-01-15",
+    status: "present",
+    markedById: "teacher1",
+    markedAt: "2024-01-15T08:45:00Z"
+  },
+  {
+    id: "sa4",
+    studentId: "student4",
+    date: "2024-01-15",
+    status: "present",
+    markedById: "teacher1",
+    markedAt: "2024-01-15T08:45:00Z"
+  },
+  {
+    id: "sa5",
+    studentId: "student5",
+    date: "2024-01-15",
     status: "present",
     markedById: "teacher1",
     markedAt: "2024-01-15T08:45:00Z"
