@@ -32,9 +32,19 @@ const Students = () => {
   const [classFilter, setClassFilter] = useState("all");
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
   
-  // Get unique classes and sections for filters
-  const classes = Array.from(new Set(mockStudents.map(student => student.class || "Unknown")));
-  const sections = Array.from(new Set(mockStudents.map(student => student.section)));
+  const classOptions = ["LKG", "UKG", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"];
+  
+  // Get available sections based on selected class
+  const getAvailableSections = (selectedClass: string) => {
+    if (selectedClass === "all") return Array.from(new Set(mockStudents.map(student => student.section)));
+    return Array.from(new Set(
+      mockStudents
+        .filter(student => student.class === selectedClass)
+        .map(student => student.section)
+    ));
+  };
+
+  const sections = getAvailableSections(classFilter);
   
   // Filter students based on search and filters
   const filteredStudents = mockStudents.filter(student => {
@@ -145,15 +155,21 @@ const Students = () => {
               
               {/* Class Filter */}
               <div className="w-full md:w-48">
-                <Select value={classFilter} onValueChange={setClassFilter}>
+                <Select 
+                  value={classFilter} 
+                  onValueChange={(value) => {
+                    setClassFilter(value);
+                    setSectionFilter("all"); // Reset section when class changes
+                  }}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Class" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Classes</SelectItem>
-                    {classes.map(cls => (
-                      <SelectItem key={cls} value={cls || "Unknown"}>
-                        {cls ? `Class ${cls}` : "Unknown"}
+                    {classOptions.map(cls => (
+                      <SelectItem key={cls} value={cls}>
+                        {cls.toUpperCase().includes('KG') ? cls : `Class ${cls}`}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -162,7 +178,11 @@ const Students = () => {
               
               {/* Section Filter */}
               <div className="w-full md:w-48">
-                <Select value={sectionFilter} onValueChange={setSectionFilter}>
+                <Select 
+                  value={sectionFilter}
+                  onValueChange={setSectionFilter}
+                  disabled={classFilter === "all"}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Section" />
                   </SelectTrigger>
