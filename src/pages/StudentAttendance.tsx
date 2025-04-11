@@ -177,20 +177,47 @@ const StudentAttendance = () => {
 
               {/* Class Filter */}
               <div className="flex-1">
-                <Select
-                  value={selectedClass}
-                  onValueChange={setSelectedClass}
+                <Select 
+                  value={selectedClass} 
+                  onValueChange={(value) => {
+                    setSelectedClass(value);
+                    setStatusFilter("all");
+                  }}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Filter by class" />
+                    <SelectValue placeholder="Class" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value={allClassesOption.id}>All Classes</SelectItem>
-                    {mockClasses.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>
-                        {c.name} ({c.section})
+                    <SelectItem value="all">All Classes</SelectItem>
+                    {["LKG", "UKG", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"].map(cls => (
+                      <SelectItem key={cls} value={cls}>
+                        {cls.toUpperCase().includes('KG') ? cls : `Class ${cls}`}
                       </SelectItem>
                     ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Section Filter */}
+              <div className="flex-1">
+                <Select 
+                  value={statusFilter}
+                  onValueChange={setStatusFilter}
+                  disabled={selectedClass === "all"}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Section" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Sections</SelectItem>
+                    {Array.from(new Set(mockStudents
+                      .filter(s => selectedClass === "all" || s.class === selectedClass)
+                      .map(s => s.section)))
+                      .map(section => (
+                        <SelectItem key={section} value={section}>
+                          Section {section}
+                        </SelectItem>
+                      ))}
                   </SelectContent>
                 </Select>
               </div>
