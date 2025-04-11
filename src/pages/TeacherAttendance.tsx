@@ -202,6 +202,7 @@ const TeacherAttendance = () => {
                   <tr>
                     <th className="text-left">Name</th>
                     <th className="text-left">Subject</th>
+                    <th className="text-left">Class</th>
                     <th className="text-center">Status</th>
                     <th className="text-center">Check In</th>
                     <th className="text-center">Check Out</th>
@@ -216,6 +217,7 @@ const TeacherAttendance = () => {
                         <tr key={teacher.id}>
                           <td>{teacher.name}</td>
                           <td>{teacher.subject}</td>
+                          <td>{teacher.classes.join(", ")}</td>
                           <td className="text-center">
                             <span
                               className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
