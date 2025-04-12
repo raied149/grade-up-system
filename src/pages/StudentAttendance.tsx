@@ -241,25 +241,6 @@ const StudentAttendance = () => {
                 </Select>
               </div>
 
-              {/* Status Filter */}
-              <div className="flex-1">
-                <Select
-                  value={statusFilter}
-                  onValueChange={setStatusFilter}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Filter by status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Statuses</SelectItem>
-                    <SelectItem value="present">Present</SelectItem>
-                    <SelectItem value="absent">Absent</SelectItem>
-                    <SelectItem value="late">Late</SelectItem>
-                    <SelectItem value="excused">Excused</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
               {/* Search */}
               <div className="flex-1">
                 <div className="relative">
