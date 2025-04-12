@@ -268,6 +268,7 @@ const StudentAttendance = () => {
                   <tr>
                     <th className="text-left">Name</th>
                     <th className="text-left">Enrollment #</th>
+                    <th className="text-left">Class</th>
                     <th className="text-left">Section</th>
                     <th className="text-center">Status</th>
                     <th className="text-center">Actions</th>
@@ -281,6 +282,7 @@ const StudentAttendance = () => {
                         <tr key={student.id}>
                           <td>{student.name}</td>
                           <td>{student.enrollmentNo}</td>
+                          <td>{student.class}</td>
                           <td>{student.section}</td>
                           <td className="text-center">
                             <span
