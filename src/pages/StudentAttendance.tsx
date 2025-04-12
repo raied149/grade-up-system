@@ -20,6 +20,7 @@ const StudentAttendance = () => {
   const [date, setDate] = useState<Date>(new Date());
   const [search, setSearch] = useState("");
   const [selectedClass, setSelectedClass] = useState<string>("all");
+  const [sectionFilter, setSectionFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [attendance, setAttendance] = useState<Record<string, StudentAttendanceType>>({});
   
@@ -181,7 +182,7 @@ const StudentAttendance = () => {
                   value={selectedClass} 
                   onValueChange={(value) => {
                     setSelectedClass(value);
-                    setStatusFilter("all");
+                    setSectionFilter("all"); // Reset section when class changes
                   }}
                 >
                   <SelectTrigger>
@@ -189,11 +190,35 @@ const StudentAttendance = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Classes</SelectItem>
-                    {["LKG", "UKG", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"].map(cls => (
+                    {classOptions.map(cls => (
                       <SelectItem key={cls} value={cls}>
                         {cls.toUpperCase().includes('KG') ? cls : `Class ${cls}`}
                       </SelectItem>
                     ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Section Filter */}
+              <div className="flex-1">
+                <Select 
+                  value={sectionFilter}
+                  onValueChange={setSectionFilter}
+                  disabled={selectedClass === "all"}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Section" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Sections</SelectItem>
+                    {Array.from(new Set(mockStudents
+                      .filter(s => selectedClass === "all" || s.class === selectedClass)
+                      .map(s => s.section)))
+                      .map(section => (
+                        <SelectItem key={section} value={section}>
+                          Section {section}
+                        </SelectItem>
+                      ))}
                   </SelectContent>
                 </Select>
               </div>
