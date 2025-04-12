@@ -127,16 +127,15 @@ const StudentAttendance = () => {
     return classItem ? classItem.students : [];
   };
 
-  // Filter students based on search and status
+  // Filter students based on search, class, section and status
   const filteredStudents = getStudents().filter(student => {
     const matchesSearch = student.name.toLowerCase().includes(search.toLowerCase()) ||
                          student.enrollmentNo.toLowerCase().includes(search.toLowerCase());
+    const matchesClass = selectedClass === "all" || student.class === selectedClass;
+    const matchesSection = sectionFilter === "all" || student.section === sectionFilter;
+    const matchesStatus = statusFilter === "all" || attendance[student.id]?.status === statusFilter;
     
-    if (statusFilter === "all") return matchesSearch;
-    
-    const studentStatus = attendance[student.id]?.status;
-    
-    return matchesSearch && studentStatus === statusFilter;
+    return matchesSearch && matchesClass && matchesSection && matchesStatus;
   });
 
   const allClassesOption = { id: "all", name: "All Classes", section: "", teacherId: "", students: [] };
@@ -225,26 +224,21 @@ const StudentAttendance = () => {
                 </Select>
               </div>
 
-              {/* Section Filter */}
+              {/* Status Filter */}
               <div className="flex-1">
-                <Select 
+                <Select
                   value={statusFilter}
                   onValueChange={setStatusFilter}
-                  disabled={selectedClass === "all"}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Section" />
+                    <SelectValue placeholder="Filter by status" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Sections</SelectItem>
-                    {Array.from(new Set(mockStudents
-                      .filter(s => selectedClass === "all" || s.class === selectedClass)
-                      .map(s => s.section)))
-                      .map(section => (
-                        <SelectItem key={section} value={section}>
-                          Section {section}
-                        </SelectItem>
-                      ))}
+                    <SelectItem value="all">All Statuses</SelectItem>
+                    <SelectItem value="present">Present</SelectItem>
+                    <SelectItem value="absent">Absent</SelectItem>
+                    <SelectItem value="late">Late</SelectItem>
+                    <SelectItem value="excused">Excused</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
