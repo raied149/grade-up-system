@@ -122,9 +122,7 @@ const StudentAttendance = () => {
     if (selectedClass === "all") {
       return mockStudents;
     }
-    
-    const classItem = mockClasses.find(c => c.id === selectedClass);
-    return classItem ? classItem.students : [];
+    return mockStudents.filter(student => student.class === selectedClass);
   };
 
   // Filter students based on search, class, section and status
