@@ -24,6 +24,8 @@ const StudentAttendance = () => {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [attendance, setAttendance] = useState<Record<string, StudentAttendanceType>>({});
   
+  const classOptions = ["LKG", "UKG", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"];
+  
   // Load user from localStorage
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
