@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import DashboardLayout from "@/components/layouts/DashboardLayout";
 import { Button } from "@/components/ui/button";
@@ -17,17 +18,17 @@ import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { mockClasses, mockTeachers } from "@/lib/mockData";
-import { TimeTable, TimeTableEntry } from "@/lib/types";
+import { type TimeTable as TimeTableType, TimeTableEntry, TimeTableDay } from "@/lib/types";
 import { toast } from "sonner";
 
-const daysOfWeek = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
+const daysOfWeek = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"] as const;
 const periods = [1, 2, 3, 4, 5, 6, 7, 8];
 
-const TimeTable = () => {
+const TimeTablePage = () => {
   const [selectedClass, setSelectedClass] = useState<string | undefined>(undefined);
   const [selectedSection, setSelectedSection] = useState<string | undefined>(undefined);
-  const [selectedDay, setSelectedDay] = useState<string>("monday");
-  const [timetable, setTimetable] = useState<TimeTable | null>(null);
+  const [selectedDay, setSelectedDay] = useState<typeof daysOfWeek[number]>("monday");
+  const [timetable, setTimetable] = useState<TimeTableType | null>(null);
   const [newPeriod, setNewPeriod] = useState<TimeTableEntry>({
     id: "",
     day: "monday",
@@ -42,7 +43,7 @@ const TimeTable = () => {
 
   useEffect(() => {
     // Mock fetch timetable data
-    const mockTimetable: TimeTable = {
+    const mockTimetable: TimeTableType = {
       id: "tt-1",
       classId: "class-1",
       section: "A",
@@ -109,19 +110,38 @@ const TimeTable = () => {
       return;
     }
 
-    const newPeriodWithId = { ...newPeriod, id: `period-${Date.now()}`, classId: selectedClass, section: selectedSection, day: selectedDay };
-    const newPeriods = [...(timetable?.days[selectedDay]?.periods || []), newPeriodWithId];
-
-    setTimetable(previousTimetable => ({
-      ...previousTimetable,
-      days: {
-        ...previousTimetable.days,
-        [selectedDay]: {
-          ...(previousTimetable.days[selectedDay] || { isHoliday: false, periods: [] }),
-          periods: newPeriods
-        }
+    const newPeriodWithId = { 
+      ...newPeriod, 
+      id: `period-${Date.now()}`, 
+      classId: selectedClass, 
+      section: selectedSection, 
+      day: selectedDay 
+    };
+    
+    setTimetable(previousTimetable => {
+      if (!previousTimetable) return previousTimetable;
+      
+      const updatedDays = { ...previousTimetable.days };
+      
+      // Initialize the day if it doesn't exist
+      if (!updatedDays[selectedDay]) {
+        updatedDays[selectedDay] = {
+          isHoliday: false,
+          periods: []
+        };
       }
-    }));
+      
+      // Add the new period
+      updatedDays[selectedDay] = {
+        ...updatedDays[selectedDay],
+        periods: [...updatedDays[selectedDay].periods, newPeriodWithId]
+      };
+      
+      return {
+        ...previousTimetable,
+        days: updatedDays
+      };
+    });
 
     setNewPeriod({
       id: "",
@@ -139,18 +159,22 @@ const TimeTable = () => {
   };
 
   const handleDeletePeriod = (periodId: string) => {
-    const updatedPeriods = timetable?.days[selectedDay]?.periods.filter((period) => period.id !== periodId) || [];
-
-    setTimetable(previousTimetable => ({
-      ...previousTimetable,
-      days: {
-        ...previousTimetable.days,
-        [selectedDay]: {
-          ...(previousTimetable.days[selectedDay] || { isHoliday: false, periods: [] }),
-          periods: updatedPeriods
-        }
-      }
-    }));
+    setTimetable(previousTimetable => {
+      if (!previousTimetable) return previousTimetable;
+      
+      const updatedDays = { ...previousTimetable.days };
+      
+      // Filter out the period
+      updatedDays[selectedDay] = {
+        ...updatedDays[selectedDay],
+        periods: updatedDays[selectedDay].periods.filter(period => period.id !== periodId)
+      };
+      
+      return {
+        ...previousTimetable,
+        days: updatedDays
+      };
+    });
 
     toast.success("Period deleted successfully");
   };
@@ -189,14 +213,11 @@ const TimeTable = () => {
               <SelectValue placeholder="Select Section" />
             </SelectTrigger>
             <SelectContent>
-              {selectedClass &&
-                mockClasses
-                  .find((cls) => cls.id === selectedClass)
-                  ?.sections?.map((section) => (
-                    <SelectItem key={section} value={section}>
-                      {section}
-                    </SelectItem>
-                  ))}
+              {selectedClass && ['A', 'B', 'C'].map((section) => (
+                <SelectItem key={section} value={section}>
+                  {section}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -251,10 +272,14 @@ const TimeTable = () => {
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Select name="day" onValueChange={(value) => {
-              handleInputChange({ target: { name: "day", value } } as any);
-              setSelectedDay(value);
-            }}>
+            <Select 
+              name="day" 
+              value={selectedDay}
+              onValueChange={(value: typeof daysOfWeek[number]) => {
+                setSelectedDay(value);
+                setNewPeriod(prev => ({ ...prev, day: value }));
+              }}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Select Day" />
               </SelectTrigger>
@@ -326,4 +351,4 @@ const TimeTable = () => {
   );
 };
 
-export default TimeTable;
+export default TimeTablePage;

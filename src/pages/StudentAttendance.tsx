@@ -37,7 +37,7 @@ const StudentAttendance = () => {
     
     const relevantStudentIds = selectedClass === "all"
       ? mockStudents.map(s => s.id)
-      : mockClasses.find(c => c.id === selectedClass)?.students.map(s => s.id) || [];
+      : mockStudents.filter(s => s.class === selectedClass).map(s => s.id);
     
     // Get existing attendance records for the selected date and class
     const existingAttendance = mockStudentAttendance
@@ -46,7 +46,7 @@ const StudentAttendance = () => {
         (selectedClass === "all" || record.classId === selectedClass)
       )
       .reduce((acc, record) => {
-        acc[record.studentId] = record;
+        acc[record.studentId || ""] = record;
         return acc;
       }, {} as Record<string, StudentAttendanceType>);
     
@@ -59,18 +59,22 @@ const StudentAttendance = () => {
     const dateString = format(date, "yyyy-MM-dd");
     const classId = selectedClass === "all" ? mockClasses[0].id : selectedClass;
     
+    // Create a new attendance record that matches StudentAttendanceType
+    const newAttendanceRecord: StudentAttendanceType = {
+      id: attendance[studentId]?.id || `sa-${Date.now()}`,
+      enrollmentId: `enrollment-${studentId}`, // Placeholder for actual enrollmentId
+      studentId, // For backward compatibility
+      date: dateString,
+      classId, // For backward compatibility
+      status,
+      markedById: user?.id || "unknown",
+      markedAt: new Date().toISOString(),
+    };
+    
     // Update attendance state
     setAttendance(prev => ({
       ...prev,
-      [studentId]: {
-        id: prev[studentId]?.id || `sa-${Date.now()}`,
-        studentId,
-        date: dateString,
-        classId,
-        status,
-        markedById: user?.id || "unknown",
-        markedAt: new Date().toISOString(),
-      }
+      [studentId]: newAttendanceRecord
     }));
     
     // Show success message
@@ -120,8 +124,7 @@ const StudentAttendance = () => {
       return mockStudents;
     }
     
-    const classItem = mockClasses.find(c => c.id === selectedClass);
-    return classItem ? classItem.students : [];
+    return mockStudents.filter(s => s.class === selectedClass);
   };
 
   // Filter students based on search and status
@@ -136,7 +139,7 @@ const StudentAttendance = () => {
     return matchesSearch && studentStatus === statusFilter;
   });
 
-  const allClassesOption = { id: "all", name: "All Classes", section: "", teacherId: "", students: [] };
+  const allClassesOption = { id: "all", name: "All Classes" };
   
   return (
     <DashboardLayout>
@@ -188,7 +191,7 @@ const StudentAttendance = () => {
                     <SelectItem value={allClassesOption.id}>All Classes</SelectItem>
                     {mockClasses.map((c) => (
                       <SelectItem key={c.id} value={c.id}>
-                        {c.name} ({c.section})
+                        {c.name}
                       </SelectItem>
                     ))}
                   </SelectContent>

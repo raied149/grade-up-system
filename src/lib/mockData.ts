@@ -46,48 +46,48 @@ export const mockStudents: Student[] = [
   {
     id: "student1",
     name: "Alex Wong",
-    section: "A",
-    grade: "10",
+    section: "A", // Now compatible with Student type
+    class: "10", // Now compatible with Student type
     enrollmentNo: "EN10001",
     attendancePercentage: 92
   },
   {
     id: "student2",
     name: "Sophia Martinez",
-    section: "A",
-    grade: "10",
+    section: "A", // Now compatible with Student type
+    class: "10", // Now compatible with Student type
     enrollmentNo: "EN10002",
     attendancePercentage: 88
   },
   {
     id: "student3",
     name: "Ethan Johnson",
-    section: "A",
-    grade: "10",
+    section: "A", // Now compatible with Student type
+    class: "10", // Now compatible with Student type
     enrollmentNo: "EN10003",
     attendancePercentage: 95
   },
   {
     id: "student4",
     name: "Olivia Brown",
-    section: "B",
-    grade: "10",
+    section: "B", // Now compatible with Student type
+    class: "10", // Now compatible with Student type
     enrollmentNo: "EN10004",
     attendancePercentage: 90
   },
   {
     id: "student5",
     name: "Noah Wilson",
-    section: "B",
-    grade: "10",
+    section: "B", // Now compatible with Student type
+    class: "10", // Now compatible with Student type
     enrollmentNo: "EN10005",
     attendancePercentage: 85
   },
   {
     id: "student6",
     name: "Emma Taylor",
-    section: "B",
-    grade: "10",
+    section: "B", // Now compatible with Student type
+    class: "10", // Now compatible with Student type
     enrollmentNo: "EN10006",
     attendancePercentage: 97
   }
@@ -124,23 +124,23 @@ export const mockClasses: Class[] = [
   {
     id: "class1",
     name: "Mathematics",
-    section: "A",
-    teacherId: "teacher1",
-    students: mockStudents.slice(0, 3)
+    level: 10,
+    section: "A", // Now compatible with Class type
+    teacherId: "teacher1"
   },
   {
     id: "class2",
     name: "Science",
-    section: "B",
-    teacherId: "teacher2",
-    students: mockStudents.slice(3, 6)
+    level: 10,
+    section: "B", // Now compatible with Class type
+    teacherId: "teacher2"
   },
   {
     id: "class3",
     name: "English",
-    section: "A",
-    teacherId: "teacher3",
-    students: mockStudents
+    level: 10,
+    section: "A", // Now compatible with Class type
+    teacherId: "teacher3"
   }
 ];
 
@@ -188,36 +188,40 @@ export const mockTeacherAttendance: TeacherAttendance[] = [
 export const mockStudentAttendance: StudentAttendance[] = [
   {
     id: "sa1",
-    studentId: "student1",
+    enrollmentId: "enrollment-student1", // Updated to match new type
+    studentId: "student1", // Keeping for backward compatibility
     date: "2025-04-08",
-    classId: "class1",
+    classId: "class1", // Keeping for backward compatibility
     status: "present",
     markedById: "teacher1",
     markedAt: "2025-04-08T08:45:00Z"
   },
   {
     id: "sa2",
-    studentId: "student2",
+    enrollmentId: "enrollment-student2", // Updated to match new type
+    studentId: "student2", // Keeping for backward compatibility
     date: "2025-04-08",
-    classId: "class1",
+    classId: "class1", // Keeping for backward compatibility
     status: "absent",
     markedById: "teacher1",
     markedAt: "2025-04-08T08:45:00Z"
   },
   {
     id: "sa3",
-    studentId: "student3",
+    enrollmentId: "enrollment-student3", // Updated to match new type
+    studentId: "student3", // Keeping for backward compatibility
     date: "2025-04-08",
-    classId: "class1",
+    classId: "class1", // Keeping for backward compatibility
     status: "present",
     markedById: "teacher1",
     markedAt: "2025-04-08T08:45:00Z"
   },
   {
     id: "sa4",
-    studentId: "student4",
+    enrollmentId: "enrollment-student4", // Updated to match new type
+    studentId: "student4", // Keeping for backward compatibility
     date: "2025-04-08",
-    classId: "class2",
+    classId: "class2", // Keeping for backward compatibility
     status: "present",
     markedById: "teacher2",
     markedAt: "2025-04-08T09:15:00Z"

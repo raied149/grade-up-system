@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import DashboardLayout from "@/components/layouts/DashboardLayout";
@@ -59,7 +58,7 @@ const Students = () => {
       Name: student.name,
       "Enrollment No": student.enrollmentNo,
       Class: student.class || "Not Specified",
-      Section: student.section,
+      Section: student.section || "",
       Attendance: `${student.attendancePercentage}%`,
       "Guardian Name": student.guardianName || "",
       "Guardian Number": student.guardianNumber || "",
@@ -169,8 +168,8 @@ const Students = () => {
                   <SelectContent>
                     <SelectItem value="all">All Sections</SelectItem>
                     {sections.map(section => (
-                      <SelectItem key={section} value={section}>
-                        Section {section}
+                      <SelectItem key={section} value={section || ""}>
+                        {section ? `Section ${section}` : "Unassigned"}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -221,7 +220,7 @@ const Students = () => {
                         <td className="py-3 px-4">{student.name}</td>
                         <td className="py-3 px-4">{student.enrollmentNo}</td>
                         <td className="py-3 px-4">{student.class || "Not Specified"}</td>
-                        <td className="py-3 px-4">{student.section}</td>
+                        <td className="py-3 px-4">{student.section || "Not Specified"}</td>
                         <td className="py-3 px-4">{student.guardianName || "Not Specified"}</td>
                         <td className="py-3 px-4">
                           <div className="flex items-center gap-2">
@@ -266,7 +265,7 @@ const Students = () => {
                                     </div>
                                     <div>
                                       <p className="text-sm text-muted-foreground">Section</p>
-                                      <p className="font-medium">{student.section}</p>
+                                      <p className="font-medium">{student.section || "Not Specified"}</p>
                                     </div>
                                   </div>
                                   

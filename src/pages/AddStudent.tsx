@@ -69,9 +69,8 @@ const AddStudent = () => {
       id: `student-${Date.now()}`,
       name: formData.name,
       enrollmentNo: formData.enrollmentNo,
-      section: formData.section,
-      grade: "", // We're removing marks/grade
-      class: formData.class,
+      section: formData.section, // We've added section back to Student type
+      class: formData.class, // We've added class back to Student type
       attendancePercentage: 100, // Default value for new student
       guardianName: formData.guardianName,
       guardianNumber: formData.guardianNumber,

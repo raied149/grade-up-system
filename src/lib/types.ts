@@ -1,5 +1,4 @@
 
-
 export type UserRole = "admin" | "teacher" | "student";
 
 export interface User {
@@ -22,6 +21,10 @@ export interface Class {
   id: string;
   name: string;    // e.g., "Grade 1", "Grade 10"
   level: number;   // e.g., 1, 10
+  // Adding back section for backward compatibility
+  section?: string;
+  students?: Student[];
+  teacherId?: string;
 }
 
 export interface Section {
@@ -52,6 +55,10 @@ export interface Student {
   guardianNumber?: string;
   address?: string;
   currentEnrollmentId?: string; // reference to enrollments
+  // Adding back fields for backward compatibility
+  section?: string;
+  class?: string;
+  grade?: string;
 }
 
 export interface Teacher {
@@ -81,6 +88,9 @@ export interface StudentAttendance {
   status: "present" | "absent" | "late" | "excused";
   markedById: string;
   markedAt: string;
+  // Adding back studentId for backward compatibility
+  studentId?: string;
+  classId?: string;
 }
 
 export interface Task {
@@ -112,6 +122,8 @@ export interface Mark {
   enrollmentId: string;  // changed from studentId to enrollmentId
   marksObtained: number;
   feedback?: string;
+  // Adding back studentId for backward compatibility
+  studentId?: string;
 }
 
 export interface CalendarEvent {
@@ -125,7 +137,7 @@ export interface CalendarEvent {
   assignedTeachers?: string[];
   maxMarks?: number;
   subject?: string;
-  class?: string; // Adding class property to fix type errors
+  class?: string;
 }
 
 export interface AttendanceSummary {
@@ -178,4 +190,3 @@ export interface TimeTable {
   section: string;
   days: Record<string, TimeTableDay>;
 }
-
