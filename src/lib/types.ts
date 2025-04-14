@@ -1,4 +1,5 @@
 
+
 export type UserRole = "admin" | "teacher" | "student";
 
 export interface User {
@@ -9,25 +10,48 @@ export interface User {
   avatar?: string;
 }
 
+export interface AcademicYear {
+  id: string;
+  name: string;  // e.g., "2024-2025"
+  startDate: string;  // ISO timestamp
+  endDate: string;    // ISO timestamp
+  status: "active" | "archived";
+}
+
 export interface Class {
   id: string;
-  name: string;
-  section: string;
-  teacherId: string;
-  students: Student[];
+  name: string;    // e.g., "Grade 1", "Grade 10"
+  level: number;   // e.g., 1, 10
+}
+
+export interface Section {
+  id: string;
+  name: string;            // e.g., "A", "Blue"
+  academicYearId: string;  // reference to academicYears
+  classId: string;         // reference to classes
+  homeroomTeacherId?: string;  // optional reference to teachers
+}
+
+export interface Enrollment {
+  id: string;
+  studentId: string;      // reference to students
+  academicYearId: string; // reference to academicYears
+  classId: string;        // reference to classes
+  sectionId: string;      // reference to sections
+  enrollmentDate: string; // ISO timestamp
+  withdrawalDate?: string; // ISO timestamp, optional
+  status: "active" | "inactive" | "graduated" | "transferred";
 }
 
 export interface Student {
   id: string;
   name: string;
-  section: string;
-  grade: string;  // Will display as "marks" but keeping the property name for compatibility
   enrollmentNo: string;
   attendancePercentage: number;
   guardianName?: string;
   guardianNumber?: string;
   address?: string;
-  class?: string;
+  currentEnrollmentId?: string; // reference to enrollments
 }
 
 export interface Teacher {
@@ -37,8 +61,8 @@ export interface Teacher {
   subject: string;
   qualifications: string[];
   classes: string[];
-  phoneNumber?: string;  // Added phone number field
-  address?: string;      // Added address field
+  phoneNumber?: string;
+  address?: string;
 }
 
 export interface TeacherAttendance {
@@ -52,9 +76,8 @@ export interface TeacherAttendance {
 
 export interface StudentAttendance {
   id: string;
-  studentId: string;
+  enrollmentId: string;  // changed from studentId to enrollmentId
   date: string;
-  classId: string;
   status: "present" | "absent" | "late" | "excused";
   markedById: string;
   markedAt: string;
@@ -86,7 +109,7 @@ export interface Exam {
 export interface Mark {
   id: string;
   examId: string;
-  studentId: string;
+  enrollmentId: string;  // changed from studentId to enrollmentId
   marksObtained: number;
   feedback?: string;
 }
@@ -155,3 +178,4 @@ export interface TimeTable {
   section: string;
   days: Record<string, TimeTableDay>;
 }
+

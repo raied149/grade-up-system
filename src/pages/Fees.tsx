@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import DashboardLayout from "@/components/layouts/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -133,7 +132,13 @@ const Fees = () => {
       description: newFee.description
     };
     
-    setFees([...fees, newFeeRecord]);
+    setFees([...fees, { 
+      ...newFeeRecord, 
+      status: newFeeRecord.status as "paid" | "not_paid" | "partial", 
+      paidAmount: newFeeRecord.amount,
+      pendingAmount: newFeeRecord.pendingAmount,
+      paidDate: new Date().toISOString()
+    }]);
     toast.success("Fee added successfully");
     setIsAddFeeDialogOpen(false);
     
