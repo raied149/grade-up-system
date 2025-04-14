@@ -19,6 +19,9 @@ import SignUp from "./pages/SignUp";
 import Fees from "./pages/Fees";
 import Exam from "./pages/Exam";
 import TimeTable from "./pages/TimeTable";
+import AcademicYears from "./pages/admin/AcademicYears";
+import Classes from "./pages/admin/Classes";
+import Sections from "./pages/admin/Sections";
 
 const queryClient = new QueryClient();
 
@@ -43,6 +46,12 @@ const App = () => (
           <Route path="/fees" element={<Fees />} />
           <Route path="/exam" element={<Exam />} />
           <Route path="/timetable" element={<TimeTable />} />
+          
+          {/* Admin Routes */}
+          <Route path="/admin/academic-years" element={<AcademicYears />} />
+          <Route path="/admin/classes" element={<Classes />} />
+          <Route path="/admin/sections" element={<Sections />} />
+          
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
