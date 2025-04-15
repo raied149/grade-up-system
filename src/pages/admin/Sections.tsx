@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -8,6 +7,7 @@ import DashboardLayout from "@/components/layouts/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
+  DialogTrigger,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -56,8 +56,8 @@ import {
   mockDeleteSection,
 } from "@/lib/mockApi";
 import { useToast } from "@/hooks/use-toast";
+import { Label } from "@/components/ui/label";
 
-// Schema for form validation
 const sectionSchema = z.object({
   name: z.string().min(1, "Name is required"),
   academicYearId: z.string().min(1, "Academic Year is required"),
@@ -81,7 +81,6 @@ export default function Sections() {
   const [filterAcademicYearId, setFilterAcademicYearId] = useState<string>("");
   const [filterClassId, setFilterClassId] = useState<string>("");
 
-  // Form setup for adding section
   const addForm = useForm<SectionFormValues>({
     resolver: zodResolver(sectionSchema),
     defaultValues: {
@@ -89,7 +88,6 @@ export default function Sections() {
     },
   });
 
-  // Form setup for editing section
   const editForm = useForm<SectionFormValues>({
     resolver: zodResolver(sectionSchema),
     defaultValues: {
@@ -97,7 +95,6 @@ export default function Sections() {
     },
   });
 
-  // Load lookup data on component mount
   useEffect(() => {
     async function loadLookupData() {
       setIsLoading(true);
@@ -112,7 +109,6 @@ export default function Sections() {
         setClasses(classesData);
         setTeachers(teachersData);
         
-        // Set default filter to active academic year if one exists
         const activeYear = academicYearsData.find(ay => ay.status === "active");
         if (activeYear) {
           setFilterAcademicYearId(activeYear.id);
@@ -132,7 +128,6 @@ export default function Sections() {
     loadLookupData();
   }, [toast]);
 
-  // Load sections based on filters
   useEffect(() => {
     async function loadSections() {
       setIsLoading(true);
@@ -158,7 +153,6 @@ export default function Sections() {
     loadSections();
   }, [filterAcademicYearId, filterClassId, toast]);
 
-  // Handle form submission for adding section
   const handleAddSubmit = async (data: SectionFormValues) => {
     try {
       const newSection = await mockCreateSection({
@@ -186,7 +180,6 @@ export default function Sections() {
     }
   };
 
-  // Handle form submission for editing section
   const handleEditSubmit = async (data: SectionFormValues) => {
     if (!currentSection) return;
     
@@ -221,7 +214,6 @@ export default function Sections() {
     }
   };
 
-  // Open edit dialog and populate form with current data
   const handleEdit = (section: Section) => {
     setCurrentSection(section);
     editForm.reset({
@@ -233,13 +225,11 @@ export default function Sections() {
     setIsEditDialogOpen(true);
   };
 
-  // Open delete confirmation dialog
   const handleDeleteClick = (section: Section) => {
     setCurrentSection(section);
     setIsDeleteDialogOpen(true);
   };
 
-  // Handle section deletion
   const handleDelete = async () => {
     if (!currentSection) return;
     
@@ -264,7 +254,6 @@ export default function Sections() {
     }
   };
 
-  // Helper function to get entity name by ID
   const getAcademicYearName = (id: string) => {
     return academicYears.find(ay => ay.id === id)?.name || "Unknown";
   };
@@ -292,7 +281,6 @@ export default function Sections() {
           </Button>
         </div>
 
-        {/* Filters Card */}
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center">
@@ -346,7 +334,6 @@ export default function Sections() {
           </CardContent>
         </Card>
 
-        {/* Sections Table */}
         <div className="rounded-md border">
           <Table>
             <TableHeader>
@@ -406,7 +393,6 @@ export default function Sections() {
         </div>
       </div>
 
-      {/* Add Section Dialog */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
@@ -530,7 +516,6 @@ export default function Sections() {
         </DialogContent>
       </Dialog>
 
-      {/* Edit Section Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
@@ -654,7 +639,6 @@ export default function Sections() {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
